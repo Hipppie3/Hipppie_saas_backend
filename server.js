@@ -12,15 +12,14 @@ app.use(cors());
 app.use(express.json());
 
 // Basic Test Route
-app.get('/', (req, res) => {
-  res.send('Hippie SaaS Backend is running!');
+app.get('/api', (req, res) => {
+  res.send({ message: 'Hippie SaaS Backend is running!' }); // ✅ Wrapped in an object
 });
-
 // Sync Database Models
 sequelize.sync({ alter: true })
   .then(() => console.log('✅ Database synchronized'))
-  .catch((err) => console.error('❌ Error syncing database:', err));
+  .catch((err) => console.error('Error syncing database:', err));
 
 app.listen(config.app.port, () =>
-  console.log(`🚀 Server running on port ${config.app.port}`)
+  console.log(`Server running on port ${config.app.port}`)
 );
