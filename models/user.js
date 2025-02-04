@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../database.js'; // Adjust the path if needed
+import { sequelize } from '../config/database.js'; // Adjust the path if needed
 
 const User = sequelize.define('user', {
   username: {
