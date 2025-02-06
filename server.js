@@ -1,32 +1,28 @@
+import dotenv from 'dotenv';
+dotenv.config(); // ✅ Load env variables here
+
 import express from 'express';
 import cors from 'cors';
-import { connectDb, sequelize } from './config/database.js'; 
+import { connectDb } from './config/database.js';
 import userRoutes from './routes/userRoutes.js';
+import sessionMiddleware from './config/session.js';
 
 const app = express();
 const PORT = process.env.PORT || 5122;
 
-// ✅ 1. Middleware (Parse JSON, Enable CORS)
+// ✅ Apply Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
 
-// ✅ 2. Connect to Database (before handling any requests)
+// ✅ Connect to Database
 await connectDb();
 
-// ✅ 3. Register Routes
+// ✅ Apply Session Middleware
+app.use(sessionMiddleware);
+
+// ✅ Register Routes
 app.use('/api/users', userRoutes);
 
-// ✅ 4. Basic Test Route
-app.get('/api', (req, res) => {
-  res.send({ message: 'Hippie SaaS Backend is running!' });
-});
 
-// ✅ 5. Sync Database Models (after DB connection)
-// sequelize.sync({ alter: true })
-// .then(() => console.log('✅ Database synchronized'))
-// .catch((err) => console.error('❌ Error syncing database:', err));
-
-// ✅ 6. Start Server
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on port ${PORT}`)
-);
+// ✅ Start Server
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

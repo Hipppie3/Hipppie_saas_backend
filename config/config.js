@@ -10,12 +10,4 @@ const dbConfig = {
   dialect: 'postgres',
 };
 
-const jwtConfig = {
-  secret: process.env.JWT_SECRET,
-};
-
-if (!jwtConfig.secret) {
-  throw new Error('JWT_SECRET is not defined in the environment variables.');
-}
-
-export { dbConfig, jwtConfig };
+export default dbConfig;
