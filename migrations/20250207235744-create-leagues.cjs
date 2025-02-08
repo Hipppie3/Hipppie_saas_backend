@@ -2,30 +2,26 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('users', {
+    await queryInterface.createTable('leagues', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      username: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
       },
-      email: {
-        type: Sequelize.STRING,
+      createdBy: {
+        type: Sequelize.INTEGER,
         allowNull: false,
-        unique: true,
-      },
-      password: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      role: {
-        type: Sequelize.ENUM('super_admin', 'client_admin'),
-        defaultValue: 'client_admin',
+        references: {
+          model: 'users', // Reference to users table
+          key: 'id',
+        },
+        onDelete: 'CASCADE', // If user is deleted, delete their leagues
       },
       createdAt: {
         allowNull: false,
@@ -41,6 +37,6 @@ module.exports = {
   },
 
   down: async (queryInterface) => {
-    await queryInterface.dropTable('users');
+    await queryInterface.dropTable('leagues');
   },
 };

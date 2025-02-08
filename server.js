@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import { connectDb } from './config/database.js';
 import userRoutes from './routes/userRoutes.js';
+import leagueRoutes from './routes/leagueRoutes.js';
 import sessionMiddleware from './config/session.js';
 
 const app = express();
@@ -22,6 +23,7 @@ app.use(sessionMiddleware);
 
 // ✅ Register Routes
 app.use('/api/users', userRoutes);
+app.use('/api/leagues', leagueRoutes);
 
 
 // ✅ Start Server
