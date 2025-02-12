@@ -30,3 +30,4 @@ app.use('/api/teams', teamRoutes);
 
 // ✅ Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+

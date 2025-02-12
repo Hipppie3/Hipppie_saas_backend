@@ -6,3 +6,4 @@ export const authenticateSession = (req, res, next) => {
   req.user = req.session.user; // Attach user data to request
   next();
 };
+

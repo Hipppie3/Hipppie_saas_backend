@@ -1,6 +1,26 @@
 import User from '../models/user.js';
 import bcrypt from 'bcrypt';
 
+
+
+// Test Custom Domain
+
+
+export const getDomain = async (req, res) => {
+let customDomain = req.params.customDomain.toLowerCase();
+customDomain = customDomain.endsWith(".com") ? customDomain : `${customDomain}.com`;
+  try {
+    const user = await User.findOne({ where: { domain: customDomain }})
+    if (!user) {
+      return res.status(404).json({ message: "Site not found" })
+    }
+    res.send(`Welcome to ${user.username}'s homepage on ${user.domain}`)
+  } catch (error) {
+    console.error("Error finding user:", error);
+    res.status(500).json({ message: "Internal Server Error" })
+  }
+};
+
 // Register User
 export const registerUser = async (req, res) => {
   const { username, email, password, role } = req.body;
@@ -28,6 +48,7 @@ export const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role,
+      domain,
     });
     //Store user in session
     req.session.user = { 
@@ -211,7 +232,7 @@ export const loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' })
     };
-    req.session.user = { id: user.id, username: user.username, role: user.role };
+    req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain };
     res.status(200).json({ message: 'Login successful', user: req.session.user })
   } catch (error) {
     console.error('Error logging in:', error);
