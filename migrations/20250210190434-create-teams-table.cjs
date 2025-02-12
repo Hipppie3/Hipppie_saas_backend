@@ -1,8 +1,9 @@
 'use strict';
 
+
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('leagues', {
+  async up (queryInterface, Sequelize) {
+    await queryInterface.createTable('teams', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -14,14 +15,23 @@ module.exports = {
         allowNull: false,
         unique: false,
       },
-      createdBy: {
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'users', // Reference to users table
+          model: 'users',
           key: 'id',
         },
-        onDelete: 'CASCADE', // If user is deleted, delete their leagues
+        onDelete: 'CASCADE',
+      },
+      leagueId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'leagues',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
       },
       createdAt: {
         allowNull: false,
@@ -36,7 +46,7 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface) => {
-    await queryInterface.dropTable('leagues');
+  async down (queryInterface, Sequelize) {
+    await queryInterface.dropTable('teams')
   },
 };

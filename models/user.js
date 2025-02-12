@@ -26,6 +26,11 @@ const User = sequelize.define('user', {
     type: DataTypes.ENUM('super_admin', 'client_admin'),
     defaultValue: 'client_admin',
   },
+  domain: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  }
 }, {
   timestamps: true, // Adds createdAt and updatedAt automatically
 });
