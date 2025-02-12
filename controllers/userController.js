@@ -4,17 +4,26 @@ import bcrypt from 'bcrypt';
 
 
 // Test Custom Domain
-
-
 export const getDomain = async (req, res) => {
-let customDomain = req.params.customDomain.toLowerCase();
+let customDomain = req.params.customDomain.toLowerCase(); // can also use const {customDomain} = req.params
 customDomain = customDomain.endsWith(".com") ? customDomain : `${customDomain}.com`;
+
   try {
-    const user = await User.findOne({ where: { domain: customDomain }})
+    const users = await User.findAll()
+    const user = users.find(u => u.domain && u.domain.toLowerCase() === customDomain)
+
     if (!user) {
       return res.status(404).json({ message: "Site not found" })
     }
-    res.send(`Welcome to ${user.username}'s homepage on ${user.domain}`)
+    res.status(200).json({ 
+      message: 'Domain fetched successfully',
+      user: {
+        id: user.id,
+        user: user.username,
+        email: user.email,
+        domain: user.domain
+      } 
+    })
   } catch (error) {
     console.error("Error finding user:", error);
     res.status(500).json({ message: "Internal Server Error" })
@@ -23,7 +32,7 @@ customDomain = customDomain.endsWith(".com") ? customDomain : `${customDomain}.c
 
 // Register User
 export const registerUser = async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, domain } = req.body;
   const saltRounds = 10;
 
   try {
@@ -54,7 +63,8 @@ export const registerUser = async (req, res) => {
     req.session.user = { 
       id: newUser.id, 
       username: newUser.username, 
-      role: newUser.role 
+      role: newUser.role ,
+      domain: newUser.domain,
     };
     res.status(201).json({ 
       message: 'Registration successful', 
@@ -176,7 +186,7 @@ export const updateUser = async (req, res) => {
 
     res.status(200).json({ 
       message: 'User updated successfully', 
-      user: req.session.user 
+      user
     });
 
   } catch (error) {

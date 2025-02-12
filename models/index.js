@@ -1,4 +1,5 @@
-import { sequelize } from '../config/database.js'; 
+import { sequelize } from '../config/database.js';
+
 import User from './user.js';
 import League from './league.js';
 import Team from './team.js';
@@ -13,7 +14,7 @@ Team.belongsTo(User, { foreignKey: 'userId' }); // A team belongs to a user
 League.hasMany(Team, { foreignKey: 'leagueId' }); // A league has many teams
 
 Team.belongsTo(League, { foreignKey: 'leagueId' }); // A team belongs to a league
-console.log(League.associations)
+
 
 // Export models
 export { sequelize, User, League, Team };
