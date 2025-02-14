@@ -13,4 +13,5 @@ router.get('/:id/teams', authenticateSession, getTeamsByLeague);
 router.post('/:id/teams', authenticateSession, createTeam)
 router.get('/:id', authenticateSession, getLeagueById);
 router.delete('/:id', authenticateSession, deleteLeague);
+
 export default router;

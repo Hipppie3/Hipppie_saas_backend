@@ -6,6 +6,7 @@ import { connectDb } from './config/database.js';
 import userRoutes from './routes/userRoutes.js';
 import leagueRoutes from './routes/leagueRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
+import playerRoutes from './routes/playerRoutes.js';
 import sessionMiddleware from './config/session.js';
 
 
@@ -27,6 +28,7 @@ app.use(sessionMiddleware);
 app.use('/api/users', userRoutes);
 app.use('/api/leagues', leagueRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/players', playerRoutes)
 
 // ✅ Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

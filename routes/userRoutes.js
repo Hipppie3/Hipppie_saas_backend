@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/check-auth', checkAuth)
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/logout', logoutUser);
+router.post('/logout', authenticateSession, logoutUser);
 router.get('/', authenticateSession, getUsers); // Protected route'
 router.get('/:customDomain', getDomain)
 router.put('/:id', authenticateSession, updateUser)

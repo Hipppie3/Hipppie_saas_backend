@@ -202,6 +202,8 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
   const requestingUser = req.user;
+  console.log(requestingUser)
+  console.log(req.user)
 
   if (requestingUser.role !== 'super_admin') {
   return res.status(403).json({ error: 'Only super admin can delete user' })
@@ -213,7 +215,7 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found '});
     }
 
-    if (requestingUser.id = user.id) {
+    if (requestingUser.id === user.id) {
       return res.status(403).json({ error: 'You cannot delete your own account' })
     }
     // Prevent deleting another super admin (if you ever add more)
