@@ -1,4 +1,4 @@
-import { League, Team, User } from '../models/index.js'
+import { League, Team, Player, User } from '../models/index.js'
 
 // Create League
 export const createLeague = async (req, res) => {
@@ -34,12 +34,18 @@ export const getLeagues = async (req, res) => {
 
     if (isSuperAdmin) {
       // ✅ If super admin, fetch all leagues (highest priority)
-      leagues = await League.findAll({ include: Team });
+      leagues = await League.findAll({ include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
     } else if (userId) {
       // ✅ If logged in, show only leagues owned by the user
       leagues = await League.findAll({ 
         where: { userId }, 
-        include: Team
+        include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ]
       });
     } else if (domain) {
       // ✅ If public, filter leagues by domain (find user by domain first)
@@ -49,7 +55,10 @@ export const getLeagues = async (req, res) => {
       }
       leagues = await League.findAll({ 
         where: { userId: user.id }, 
-        include: Team 
+        include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] 
       });
     } else {
       // ✅ If no userId, no domain, and not super admin, return no leagues
@@ -66,9 +75,6 @@ export const getLeagues = async (req, res) => {
 };
 
 
-
-
-
 // Get League By ID
 export const getLeagueById = async (req, res) => {
   const { id } = req.params;
@@ -81,17 +87,26 @@ export const getLeagueById = async (req, res) => {
     let league;
     if (isSuperAdmin) {
       // ✅ Super admin can access any league
-      league = await League.findByPk(id, { include: Team });
+      league = await League.findByPk(id, { include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
     } else if (userId) {
       // ✅ Regular users can only access their own leagues
-      league = await League.findOne({ where: { id, userId }, include: Team });
+      league = await League.findOne({ where: { id, userId }, include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
     } else if (domain) {
       // ✅ Public access via domain (Find the user first, then get their league)
       const user = await User.findOne({ where: { domain } });
       if (!user) {
         return res.status(404).json({ message: "No leagues found for this domain" });
       }
-      league = await League.findOne({ where: { id, userId: user.id }, include: Team });
+      league = await League.findOne({ where: { id, userId: user.id }, include: [
+    { model: Team, as: 'teams' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
     } else {
       return res.status(403).json({ message: "Unauthorized" });
     }
@@ -105,6 +120,28 @@ export const getLeagueById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch league" });
   }
 };
+
+
+// Update League
+export const updateLeague = async (req, res) => {
+  const {name} = req.body
+  const {id} = req.params;
+
+  try {
+    const league = await League.findByPk(id);
+    console.log(league)
+    if (!league) {
+      return res.status(404).json({ message: "League not found"})
+    };
+    await league.update({
+      name
+    })
+    res.status(200).json({ message: "League updated successfully", league})
+  } catch (error) {
+    console.error("Error updating league:", error);
+    res.status(500).json({ message: "Failed to update league" })
+  }
+}
 
 
 // Delete League

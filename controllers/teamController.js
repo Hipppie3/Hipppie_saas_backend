@@ -40,11 +40,17 @@ try {
   const isSuperAdmin = req.session?.user?.role === "super_admin";
 
   if (isSuperAdmin) {
-    teams = await Team.findAll({ include: Player });
+    teams = await Team.findAll({ include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
   } else if (userId) {
     teams = await Team.findAll({
       where: {userId},
-      include: Player
+      include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ]
     });
   } else if (domain) {
     const user = await User.findOne({ where: {domain}})
@@ -53,7 +59,10 @@ try {
     }
     teams = await Team.findAll({ 
       where: { userId: user.id },
-      include: Player
+      include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ]
     });
   } else {
     return res.status(403).json({ message: "Unauthorized or no teams available" });
@@ -71,45 +80,67 @@ try {
 
 // Get Team By ID
 export const getTeamById = async (req, res) => {
- const {id} = req.params;
- try {
-  const team = await Team.findByPk(id);
-  console.log(team)
+const { id } = req.params;
+console.log("Fetching team by ID:", id);
+try {
+  const userId = req.session?.user?.id;
+  const domain = req.query.domain;
+  const isSuperAdmin = req.session?.user?.role === "super_admin";
+
+  let team; 
+  if (isSuperAdmin) {
+    team = await Team.findByPk(id, { include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ] });
+  } else if (userId) {
+    team = await Team.findOne({ where: {id, userId}, include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ]});
+  } else if (domain) {
+    const user = await User.findOne({ where: { domain }});
+    if (!user) {
+      return res.status(404).json({ message: "No teams found for this domain" });
+    }
+    team = await Team.findOne({ where: { id, userId: user.id }, include: [
+    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
+    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+  ]})
+  } else {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
   if (!team) {
-   return res.status(404).json({ message: 'No Teams found'})
-  };
-  res.status(200).json({ message: 'Team fetched successfully', team})
- } catch (error) {
+    res.status(404).json({ message: "Team not fuond"});
+  }
+  res.status(200).json({ message: "Team fetched successfully", team});
+  } catch (error) {
   console.error("Error fetching teams:", error);
   res.status(500).json({ message: "Failed to fetch teams"})
- }
+  }
 }
 
-// Get Teams By League 
-export const getTeamsByLeague = async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    const teams = await Team.findAll({ 
-      where: { 
-        userId: req.user.id,
-        leagueId: id
-      },
-      include: {
-        model: League,
-        as: 'league'
-      }
-    })
-    if (teams.length === 0) {
-      return res.status(200).json({ message: 'No teams found', teams: [] }); // ✅ Return 200 instead of 404
-    }
-    res.status(200).json({ message: 'Teams fetched successfully', teams });
-  } catch (error) {
-    console.error("Error fetching teams:", error);
-    res.status(500).json({ message: "Failed to fetch teams" });
-  }
-};
+export const updateTeam = async (req, res) => {
+  const {name, leagueId} = req.body;
+  const {id} = req.params;
 
+  try {
+    const team = await Team.findByPk(id)
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" })
+    }
+    console.log(team)
+    console.log(leagueId)
+    await team.update({
+      name,
+      leagueId
+    })
+    res.status(201).json({ message: "Team updated successfully", team})
+  } catch (error) {
+    console.error("Error updating team:", error)
+    res.status(500).json({ message: "Failed to update team"})
+  }
+}
 
 
 export const deleteTeam = async (req, res) => {
@@ -129,4 +160,5 @@ export const deleteTeam = async (req, res) => {
     res.status(500).json({ message: "Failed to delete team"})
   }
 }
+
 
