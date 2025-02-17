@@ -5,7 +5,7 @@ import {getTeams, getTeamById, deleteTeam} from '../controllers/teamController.j
 
 const router = express.Router();
 
-router.get('/', authenticateSession, getTeams)
+router.get('/', getTeams)
 router.get('/:id', authenticateSession, getTeamById)
 router.delete('/:id', authenticateSession, deleteTeam)
 

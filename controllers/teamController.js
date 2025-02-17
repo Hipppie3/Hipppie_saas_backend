@@ -1,4 +1,4 @@
-import { League, Team, Player } from '../models/index.js'
+import { League, Team, Player, User } from '../models/index.js'
 
 
 // Create Team
@@ -33,35 +33,39 @@ export const createTeam = async (req, res) => {
 
 // Get All Teams
 export const getTeams = async (req, res) => {
- try {
+try {
+  let teams;
+  const userId = req.session?.user?.id;
+  const domain = req.query.domain;
+  const isSuperAdmin = req.session?.user?.role === "super_admin";
 
-  const leagues = await League.findAll({ where: { userId: req.user.id }});
-  const teams = await Team.findAll({ 
-    where: { userId: req.user.id },
-    include: {
-      model: League,
-      as: 'league'
-    }});
-  console.log("Fetched Leagues:", leagues);  // ✅ Debugging output
-  console.log("Fetched Teams:", teams);      // ✅ Debugging output
-
-  if (leagues.length === 0) {
-   return res.status(404).json({ message: 'No leagues found' });
+  if (isSuperAdmin) {
+    teams = await Team.findAll({ include: Player });
+  } else if (userId) {
+    teams = await Team.findAll({
+      where: {userId},
+      include: Player
+    });
+  } else if (domain) {
+    const user = await User.findOne({ where: {domain}})
+    if (!user) {
+      return res.status(404).json({ message: "No Teams found for this domain" });
+    }
+    teams = await Team.findAll({ 
+      where: { userId: user.id },
+      include: Player
+    });
+  } else {
+    return res.status(403).json({ message: "Unauthorized or no teams available" });
   }
-  if (teams.length === 0) {
-   return res.status(404).json({ message: 'No teams found' });
-  }
-
-  res.status(200).json({ 
-    message: 'Teams fetched successfully', 
-    teams, 
-    leagues  // ✅ This should now include leagues
+  res.status(200).json({
+    message: teams.length ? "Teams fetched successfully" : "No teams found",
+    teams
   });
-
- } catch (error) {
+} catch (error) {
   console.error("Error fetching teams:", error);
-  res.status(500).json({ message: "Failed to fetch teams" });
- }
+  res.status(505).json({ message: "Failed to fetch teams" });
+}
 };
 
 

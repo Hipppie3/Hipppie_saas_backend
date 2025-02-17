@@ -28,7 +28,7 @@ app.use(sessionMiddleware);
 app.use('/api/users', userRoutes);
 app.use('/api/leagues', leagueRoutes);
 app.use('/api/teams', teamRoutes);
-app.use('/api/players', playerRoutes)
+app.use('/api/players', playerRoutes);
 
 // ✅ Start Server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
