@@ -8,8 +8,8 @@ import { authenticateSession } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // ✅ Public domain lookup routes (Moved to the top)
-router.get('/', getUserWebsites);
-router.get('/domain/:customDomain', getDomain);
+router.get('/', getUserWebsites); // Can later remove this and fetch all users and check Auth to show other information or just websites and domain
+router.get('/domain/:customDomain', getDomain); 
 
 // ✅ Authentication-related routes
 router.post('/register', registerUser);

@@ -111,7 +111,7 @@ try {
     return res.status(403).json({ message: "Unauthorized" });
   }
   if (!team) {
-    res.status(404).json({ message: "Team not fuond"});
+    return res.status(404).json({ message: "Team not fuond"});
   }
   res.status(200).json({ message: "Team fetched successfully", team});
   } catch (error) {
@@ -132,15 +132,15 @@ export const updateTeam = async (req, res) => {
     console.log(team)
     console.log(leagueId)
     await team.update({
-      name,
-      leagueId
+      name: name || team.name,
+      leagueId: leagueId || team.leagueId,
     })
-    res.status(201).json({ message: "Team updated successfully", team})
+    res.status(201).json({ message: "Team updated successfully", team })
   } catch (error) {
     console.error("Error updating team:", error)
     res.status(500).json({ message: "Failed to update team"})
   }
-}
+};
 
 
 export const deleteTeam = async (req, res) => {
