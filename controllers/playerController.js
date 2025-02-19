@@ -52,12 +52,15 @@ export const getPlayers = async (req, res) => {
     const userId = req.session?.user?.id;
     const domain = req.query.domain;
     const isSuperAdmin = req.session?.user?.role === "super_admin";
-
+    console.log(domain)
     if (isSuperAdmin) {
       players = await Player.findAll()
     } else if (userId) {
       players = await Player.findAll({ 
         where: {userId},
+        include: {
+          model: Team, as: "teams"
+        },
       })
     } else if (domain) {
       const user = await User.findOne({ 
@@ -86,21 +89,24 @@ export const getPlayerById = async (req, res) => {
   const domain = req.query.domain;
   const isSuperAdmin = req.session?.user?.role === "super_admin";
     console.log(id)
-    console.log(userId)
   let player;
  if (isSuperAdmin) {
       player = await Player.findByPk(id)
     } else if (userId) {
-      player = await Player.findAll({ 
+      player = await Player.findByPk({ 
         where: {id, userId}
       })
     } else if (domain) {
       const user = await User.findOne({ 
-        where: {domain}})
+        where: {domain},
+        include: {
+          model: Team, as: "teams"
+        },
+      })
       if (!user) {
         return res.status(404).json({ messsage: "No Players found for this domain" });
       }
-      player = await Player.findAll();
+      player = await Player.findByPk(id);
     } else {
       return res.status(403).json({ message: "Unauthorized or no players available" })
     }

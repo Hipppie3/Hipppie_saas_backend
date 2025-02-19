@@ -38,7 +38,6 @@ try {
   const userId = req.session?.user?.id;
   const domain = req.query.domain;
   const isSuperAdmin = req.session?.user?.role === "super_admin";
-
   if (isSuperAdmin) {
     teams = await Team.findAll({ include: [
     { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
