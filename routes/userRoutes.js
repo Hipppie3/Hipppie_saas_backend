@@ -20,7 +20,7 @@ router.get('/check-auth', authenticateSession, checkAuth);
 // ✅ User-related routes (Super admin protected)
 router.get('/userList', authenticateSession, getUsers); 
 router.get('/:id', authenticateSession, getUserById);
-router.patch('/:id', authenticateSession, updateUser);
+router.put('/:id', authenticateSession, updateUser);
 router.delete('/:id', authenticateSession, deleteUser);
 
 export default router;

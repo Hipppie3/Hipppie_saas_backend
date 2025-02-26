@@ -25,7 +25,7 @@ Player.belongsTo(League, { foreignKey: 'leagueId', as: 'league' }); // A player 
 
 // Team <--> Player Association
 Team.hasMany(Player, { foreignKey: 'teamId', as: 'players' }); // A team has many players
-Player.belongsTo(Team, { foreignKey: 'teamId', as: 'team' }); // A player belongs to a team
+Player.belongsTo(Team, { foreignKey: 'teamId', as: 'teams' }); // A player belongs to a team
 
 // ✅ Export models with explicit associations
 export { sequelize, User, League, Team, Player };

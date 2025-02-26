@@ -56,10 +56,10 @@ export const registerUser = async (req, res) => {
 
 //Login User
 export const loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, domain} = req.body;
 
   try {
-    const user = await User.findOne({ where:  { username }});
+    const user = await User.findOne({ where:  { username, domain }});
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' })
     };
@@ -81,11 +81,13 @@ export const logoutUser = async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not logged in' });
   }
+  const {domain} = req.session.user;
+
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ message: 'Logout failed' });
     }
-    res.clearCookie('connect.sid').status(200).json({ message: 'Logged out successfully' });
+    res.clearCookie('connect.sid').status(200).json({ message: 'Logged out successfully', domain });
   });
 };
 

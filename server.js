@@ -20,6 +20,19 @@ app.use(cors({ credentials: true, origin: 'http://localhost:5173' }));
 // ✅ Connect to Database
 await connectDb();
 
+// Middleware to set cache headers
+app.use((req, res, next) => {
+  const domain = req.query.domain;
+  
+  if (!domain) {
+    // Private content: prevent caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  }
+
+  next();
+});
+
+
 
 // ✅ Apply Session Middleware
 app.use(sessionMiddleware);
@@ -31,5 +44,5 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/players', playerRoutes);
 
 // ✅ Start Server
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
 

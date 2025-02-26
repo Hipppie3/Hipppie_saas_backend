@@ -1,6 +1,5 @@
 'use strict';
 
-
 module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.createTable('players', {
@@ -20,6 +19,10 @@ module.exports = {
       },
       age: {
         type: Sequelize.INTEGER,
+        allowNull: true,
+      },
+      image: {
+        type: Sequelize.BLOB('long'), // Stores image as binary data
         allowNull: true,
       },
       userId: {
@@ -61,6 +64,6 @@ module.exports = {
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('players')
+    await queryInterface.dropTable('players');
   }
 };

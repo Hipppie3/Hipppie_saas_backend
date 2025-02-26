@@ -17,6 +17,10 @@ const Player = sequelize.define('player', {
   allowNull: true,
   unique: false,
  },
+ image: {
+  type: DataTypes.BLOB("long"),
+  allowNull: true,
+ },
  userId: {
   type: DataTypes.INTEGER,
   allowNull: false,

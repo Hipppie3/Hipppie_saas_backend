@@ -67,45 +67,68 @@ export const getLeagues = async (req, res) => {
   }
 };
 
-
-// Get League By ID
+// Get League By Id
 export const getLeagueById = async (req, res) => {
   const { id } = req.params;
   console.log("Fetching league with ID:", id);
 
   try {
-    const userId = req.session?.user?.id; // ✅ Get logged-in user ID
-    const domain = req.query.domain; // ✅ Get domain if public user
-    const isSuperAdmin = req.session?.user?.role === "super_admin"; // ✅ Check if user is super_admin
+    const userId = req.session?.user?.id;
+    const domain = req.query.domain;
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
     let league;
+
     if (isSuperAdmin) {
-      league = await League.findByPk(id, { include: [
-    { model: Team, as: 'teams' }, 
-  ] });
+      league = await League.findByPk(id, { 
+        include: [
+          { 
+            model: Team, 
+            as: 'teams',
+            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+          }  
+        ]
+      });
     } else if (userId) {
-      league = await League.findOne({ where: { id, userId }, include: [
-    { model: Team, as: 'teams' },  
-  ] });
+      league = await League.findOne({ 
+        where: { id, userId }, 
+        include: [
+          { 
+            model: Team, 
+            as: 'teams',
+            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+          }  
+        ]
+      });
     } else if (domain) {
       const user = await User.findOne({ where: { domain } });
       if (!user) {
         return res.status(404).json({ message: "No leagues found for this domain" });
       }
-      league = await League.findOne({ where: { id, userId: user.id }, include: [
-    { model: Team, as: 'teams' }, 
-  ] });
+      league = await League.findOne({ 
+        where: { id, userId: user.id }, 
+        include: [
+          { 
+            model: Team, 
+            as: 'teams',
+            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+          }  
+        ]
+      });
     } else {
       return res.status(403).json({ message: "Unauthorized" });
     }
+
     if (!league) {
       return res.status(404).json({ message: "League not found" });
     }
+
     res.status(200).json({ message: "League fetched successfully", league });
   } catch (error) {
     console.error("Error fetching league:", error);
     res.status(500).json({ message: "Failed to fetch league" });
   }
 };
+
 
 
 // Update League
