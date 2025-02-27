@@ -4,76 +4,105 @@ import bcrypt from 'bcrypt';
 
 
 
+
 // Register User
 export const registerUser = async (req, res) => {
   const { username, email, password, role, domain } = req.body;
   const saltRounds = 10;
 
   try {
-    // Normalize domain (lowercase)
-    const normalizedDomain = domain ? domain.toLowerCase() : null;  
+    // Normalize domain (lowercase) and ensure email/password can be empty
+    const normalizedDomain = domain ? domain.toLowerCase() : null;
+    const normalizedEmail = email && email.trim() !== "" ? email.toLowerCase() : null;
+    const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : null;
+
     // Check if a super admin already exists
     const superAdminExists = await User.findOne({ where: { role: 'super_admin' } });
-      if (role === 'super_admin' && superAdminExists) {
+    if (role === 'super_admin' && superAdminExists) {
       return res.status(403).json({ error: 'A super admin already exists. Only an existing super admin can create another.' });
-    };
-    // Check if username or email already exists
+    }
+
+    // Check if username already exists
     const userNameExists = await User.findOne({ where: { username } });
-      if (userNameExists) {
+    if (userNameExists) {
       return res.status(403).json({ error: 'Username already exists' });
-    };
-    const emailExists = await User.findOne({ where: { email }});
+    }
+
+    // Check if email already exists but only if email is provided
+    if (normalizedEmail) {
+      const emailExists = await User.findOne({ where: { email: normalizedEmail } });
       if (emailExists) {
-      return res.status(403).json({ error: 'Email already registered' })
-    };
-    // Hash password and create user
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+        return res.status(403).json({ error: 'Email already registered' });
+      }
+    }
+
+    // Create the new user
     const newUser = await User.create({
       username,
-      email,
-      password: hashedPassword,
-      role,
+      email: normalizedEmail,
+      password: hashedPassword, // Password can be null
+      role: role || 'client_admin', // Default to client_admin if not provided
       domain: normalizedDomain,
     });
-    //Store user in session
-    req.session.user = { 
-      id: newUser.id, 
-      username: newUser.username, 
-      role: newUser.role ,
-      domain: newUser.domain,
-    };
+
+    // ❌ Do NOT overwrite req.session.user
+    // req.session.user = { 
+    //   id: newUser.id, 
+    //   username: newUser.username, 
+    //   role: newUser.role,
+    //   domain: newUser.domain,
+    // };
+
     res.status(201).json({ 
       message: 'Registration successful', 
-      user: req.session.user
+      user: { 
+        id: newUser.id, 
+        username: newUser.username, 
+        role: newUser.role,
+        domain: newUser.domain 
+      } 
     });
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).json({ error: 'Registration failed' });
-  };
+  }
 };
+
+
 
 
 
 //Login User
 export const loginUser = async (req, res) => {
-  const { username, password, domain} = req.body;
+  const { username, password, domain } = req.body;
 
   try {
-    const user = await User.findOne({ where:  { username, domain }});
+    const user = await User.findOne({ where: { username, domain } });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid username or password' })
-    };
-    const isPasswordValid = await bcrypt.compare( password, user.password);
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
+    // ✅ If the user has no password set, allow login
+    if (!user.password) {
+      req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain };
+      return res.status(200).json({ message: 'Login successful (no password required)', user: req.session.user });
+    }
+
+    // ✅ If a password is set, validate it
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid username or password' })
-    };
+      return res.status(401).json({ message: 'Invalid username or password' });
+    }
+
     req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain };
-    res.status(200).json({ message: 'Login successful', user: req.session.user })
+    res.status(200).json({ message: 'Login successful', user: req.session.user });
+
   } catch (error) {
     console.error('Error logging in:', error);
-    res.status(500).json({ message: 'Internal server error'})
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 //Logout User
@@ -145,12 +174,13 @@ export const updateUser = async (req, res) => {
       }
       hashedPassword = await bcrypt.hash(newPassword, 10);
     }
-    await user.update({ 
-      username: username || user.username,
-      password: hashedPassword || user.password,
-      email: email || user.email,
-      domain: normalizedDomain
-    });
+await user.update({ 
+  username: username || user.username,
+  password: hashedPassword || user.password,
+  email: email !== undefined && email.trim() === "" ? null : email, // ✅ Allow clearing email
+  domain: domain !== undefined && domain.trim() === "" ? null : normalizedDomain, // ✅ Allow clearing domain
+});
+
 
     if (requestingUser.id === user.id) { 
       req.session.user = { 
@@ -162,6 +192,7 @@ export const updateUser = async (req, res) => {
     }
     res.status(200).json({ 
       message: 'User updated successfully', 
+      success: true,
       user: { id: user.id, username: user.username, email: user.email, domain: user.domain}
     });
   } catch (error) {
@@ -206,7 +237,9 @@ export const deleteUser = async (req, res) => {
 
 // Get all Users
 export const getUsers = async (req, res) => {
+  console.log('fetching')
   const requestingUser = req.user;
+  console.log(requestingUser)
   if (requestingUser.role !== 'super_admin') {
     return res.status(403).json({ error: 'Only super admin can view users' });
   }
