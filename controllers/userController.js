@@ -124,9 +124,20 @@ export const logoutUser = async (req, res) => {
 
 // Check Authentication
 export const checkAuth = (req, res) => {
+  console.log("Checking session:", req.session.user); // ✅ Debugging
+  
   if (req.session.user) {
-    return res.json({ authenticated: true, user: req.session.user });
+    return res.json({ 
+      authenticated: true, 
+      user: { 
+        id: req.session.user.id, 
+        username: req.session.user.username, 
+        role: req.session.user.role, 
+        domain: req.session.user.domain 
+      }
+    });
   }
+
   res.json({ authenticated: false, user: null });
 };
 
@@ -135,34 +146,41 @@ export const checkAuth = (req, res) => {
 
 // Update User
 export const updateUser = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // The user being updated
   const { username, oldPassword, newPassword, email, domain } = req.body;
-  const requestingUser = req.user;
+  const requestingUser = req.user; // The logged-in user
+
   try {
     const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    // Prevent non-super admins from updating others
+
+    // ✅ Regular users can only update their own profile
     if (requestingUser.role !== 'super_admin' && requestingUser.id !== user.id) {
       return res.status(403).json({ error: 'You can only update your own profile' });
     }
+
+    // ✅ Check if username is unique (only if changed)
     if (username && username !== user.username) {
       const existingUser = await User.findOne({ where: { username } });
       if (existingUser) return res.status(400).json({ error: 'Username already taken' });
     }
+
+    // ✅ Check if email is unique (only if changed)
     if (email && email !== user.email) {
       const existingEmail = await User.findOne({ where: { email } });
       if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
     }
-    if (oldPassword && !newPassword) {
-      return res.status(400).json({ error: 'New password is required when changing password' });
-    }
+
+    // ✅ If updating domain, ensure it's unique
     const normalizedDomain = domain ? domain.toLowerCase() : user.domain;
     if (domain && domain !== user.domain) {
       const existingDomain = await User.findOne({ where: { domain: normalizedDomain } });
       if (existingDomain) return res.status(400).json({ error: 'Domain already in use' });
     }
+
+    // ✅ Regular users must provide old password to update password
     let hashedPassword;
     if (newPassword) {
       if (!oldPassword) {
@@ -170,36 +188,41 @@ export const updateUser = async (req, res) => {
       }
       const isMatch = await bcrypt.compare(oldPassword, user.password);
       if (!isMatch) {
-        return res.status(400).json({ error: 'Incorrect current password. Please enter the correct password to update your account.' });
+        return res.status(400).json({ error: 'Incorrect current password' });
       }
       hashedPassword = await bcrypt.hash(newPassword, 10);
     }
-await user.update({ 
-  username: username || user.username,
-  password: hashedPassword || user.password,
-  email: email !== undefined && email.trim() === "" ? null : email, // ✅ Allow clearing email
-  domain: domain !== undefined && domain.trim() === "" ? null : normalizedDomain, // ✅ Allow clearing domain
-});
 
+    // ✅ Super Admins can update any user, but CANNOT change passwords unless provided
+    await user.update({
+      username: username || user.username,
+      password: hashedPassword || user.password,
+      email: email !== undefined && email.trim() === "" ? null : email,
+      domain: domain !== undefined && domain.trim() === "" ? null : normalizedDomain,
+    });
 
-    if (requestingUser.id === user.id) { 
-      req.session.user = { 
-        id: user.id, 
-        username: user.username, 
+    // ✅ If the logged-in user is updating their own profile, update session
+    if (requestingUser.id === user.id) {
+      req.session.user = {
+        id: user.id,
+        username: user.username,
         role: user.role,
-        domain: user.domain
+        domain: user.domain,
       };
     }
-    res.status(200).json({ 
-      message: 'User updated successfully', 
+
+    res.status(200).json({
+      message: 'User updated successfully',
       success: true,
-      user: { id: user.id, username: user.username, email: user.email, domain: user.domain}
+      user: { id: user.id, username: user.username, email: user.email, domain: user.domain },
     });
+
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ message: "Failed to update user" });
+    res.status(500).json({ message: 'Failed to update user' });
   }
 };
+
 
 
 // Delete User
