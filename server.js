@@ -7,7 +7,10 @@ import userRoutes from './routes/userRoutes.js';
 import leagueRoutes from './routes/leagueRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import playerRoutes from './routes/playerRoutes.js';
+import sportRoutes from './routes/sportRoutes.js';
+import statRoutes from './routes/statRoutes.js';
 import sessionMiddleware from './config/session.js';
+
 
 
 const app = express();
@@ -42,6 +45,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/leagues', leagueRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/players', playerRoutes);
+app.use('/api/sports', sportRoutes);
+app.use('/api/stats', statRoutes);
+
 
 // ✅ Start Server
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));

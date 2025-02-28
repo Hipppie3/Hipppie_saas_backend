@@ -89,7 +89,7 @@ export const getPlayers = async (req, res) => {
       ]
     });
   } else {
-    return res.status(403).json({ message: "Unauthroized or no players available" });
+    return res.status(403).json({ message: "Unauthorized or no players available" });
   }
     const formattedPlayers = players.map((player) => ({
       ...player.toJSON(),
