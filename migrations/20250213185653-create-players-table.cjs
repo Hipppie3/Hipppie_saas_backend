@@ -30,27 +30,17 @@ module.exports = {
         allowNull: false,
         references: {
           model: 'users',
-          key: 'id'
+          key: 'id',
         },
-        onDelete: 'CASCADE'
+        onDelete: 'SET NULL',
       },
       leagueId: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: {
-          model: 'leagues',
-          key: 'id'
-        },
-        onDelete: 'SET NULL',
       },
       teamId: {
         type: Sequelize.INTEGER,
         allowNull: true,
-        references: {
-          model: 'teams',
-          key: 'id'
-        },
-        onDelete: 'SET NULL',
       },
       createdAt: {
         type: Sequelize.DATE,

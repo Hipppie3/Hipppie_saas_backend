@@ -6,6 +6,7 @@ import Team from './team.js';
 import Player from './player.js';
 import Sport from './sport.js';
 import Stat from './stat.js';
+import Game from './game.js';
 
 // ✅ Define Associations with Explicit Aliases
 
@@ -33,5 +34,23 @@ Player.belongsTo(Team, { foreignKey: 'teamId', as: 'team' });
 Sport.hasMany(Stat, { foreignKey: 'sportId', as: 'stats' });
 Stat.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
+// ✅ League <--> Sport Association
+Sport.hasMany(League, { foreignKey: 'sportId', as: 'leagues' });
+League.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
+
+
+// ✅ Game Associations
+Sport.hasMany(Game, { foreignKey: 'sportId', as: 'games' });
+Game.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
+
+League.hasMany(Game, { foreignKey: 'leagueId', as: 'games' });
+Game.belongsTo(League, { foreignKey: 'leagueId', as: 'league' });
+
+Team.hasMany(Game, { foreignKey: 'team1_id', as: 'homeGames' });
+Game.belongsTo(Team, { foreignKey: 'team1_id', as: 'homeTeam' });
+
+Team.hasMany(Game, { foreignKey: 'team2_id', as: 'awayGames' });
+Game.belongsTo(Team, { foreignKey: 'team2_id', as: 'awayTeam' });
+
 // ✅ Export models with explicit associations
-export { sequelize, User, League, Team, Player, Sport, Stat };
+export { sequelize, User, League, Team, Player, Sport, Stat, Game };

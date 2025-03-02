@@ -14,14 +14,18 @@ module.exports = {
         allowNull: false,
         unique: false,
       },
-      createdBy: {
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'users', // Reference to users table
           key: 'id',
         },
-        onDelete: 'CASCADE', // If user is deleted, delete their leagues
+        onDelete: 'SET NULL', // If user is deleted, set leagues to null
+      },
+      sportId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,

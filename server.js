@@ -9,6 +9,7 @@ import teamRoutes from './routes/teamRoutes.js';
 import playerRoutes from './routes/playerRoutes.js';
 import sportRoutes from './routes/sportRoutes.js';
 import statRoutes from './routes/statRoutes.js';
+import gameRoutes from './routes/gameRoutes.js';
 import sessionMiddleware from './config/session.js';
 
 
@@ -47,6 +48,9 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/sports', sportRoutes);
 app.use('/api/stats', statRoutes);
+app.use('/api/games', gameRoutes);
+
+
 
 
 // ✅ Start Server

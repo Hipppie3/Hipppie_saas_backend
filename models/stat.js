@@ -1,6 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import Sport from './sport.js';
 
 const Stat = sequelize.define('stat', {
   id: {
@@ -12,10 +11,10 @@ const Stat = sequelize.define('stat', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Sport,
+      model: 'sports',
       key: 'id',
     },
-    onDelete: 'CASCADE',
+    onDelete: 'SET NULL',
   },
   name: {
     type: DataTypes.STRING,

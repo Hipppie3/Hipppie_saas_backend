@@ -66,14 +66,14 @@ export const getPlayers = async (req, res) => {
     if (isSuperAdmin) {
       players = await Player.findAll({ include: [
         { model: League, as: 'league'},
-        { model: Team, as: 'teams'}
+        { model: Team, as: 'team'}
       ]});
     } else if (userId) {
       players = await Player.findAll({
         where: {userId},
         include: [
         { model: League, as: 'league'},
-        { model: Team, as: 'teams'}
+        { model: Team, as: 'team'}
         ]
       });
     } else if (domain) {
@@ -85,7 +85,7 @@ export const getPlayers = async (req, res) => {
       where: { userId: user.id},
       include: [
         { model: League, as: "league" },
-        { model: Team, as: "teams"}
+        { model: Team, as: "team"}
       ]
     });
   } else {
@@ -120,7 +120,7 @@ export const getPlayerById = async (req, res) => {
     if (isSuperAdmin) {
       player = await Player.findByPk(id, {
         include: [
-          { model: Team, as: "teams" },
+          { model: Team, as: "team" },
           { model: League, as: "league" },
         ],
       });
@@ -128,7 +128,7 @@ export const getPlayerById = async (req, res) => {
       player = await Player.findOne({
         where: { id, userId },
         include: [
-          { model: Team, as: "teams" },
+          { model: Team, as: "team" },
           { model: League, as: "league" },
         ],
       });
@@ -141,7 +141,7 @@ export const getPlayerById = async (req, res) => {
       player = await Player.findOne({
         where: { id, userId: user.id },
         include: [
-          { model: Team, as: "teams" },
+          { model: Team, as: "team" },
           { model: League, as: "league" },
         ],
       });

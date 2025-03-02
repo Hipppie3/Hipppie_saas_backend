@@ -22,16 +22,11 @@ module.exports = {
           model: 'users',
           key: 'id',
         },
-        onDelete: 'CASCADE',
+        onDelete: 'SET NULL',
       },
       leagueId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'leagues',
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,

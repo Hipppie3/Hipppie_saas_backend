@@ -1,20 +1,35 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Check if Basketball already exists
-    const [existingSport] = await queryInterface.sequelize.query(
+    // Check if Basketball exists
+    const [existingBasketball] = await queryInterface.sequelize.query(
       `SELECT id FROM sports WHERE name = 'Basketball' LIMIT 1;`,
       { type: Sequelize.QueryTypes.SELECT }
     );
 
-    if (!existingSport) {
-      // Insert Basketball only if it doesn't exist
-      await queryInterface.bulkInsert('sports', [
-        { name: 'Basketball', createdAt: new Date(), updatedAt: new Date() },
-      ]);
+    // Check if Volleyball exists
+    const [existingVolleyball] = await queryInterface.sequelize.query(
+      `SELECT id FROM sports WHERE name = 'Volleyball' LIMIT 1;`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+
+    const sportsToInsert = [];
+
+    if (!existingBasketball) {
+      sportsToInsert.push({ name: 'Basketball', createdAt: new Date(), updatedAt: new Date() });
+    }
+
+    if (!existingVolleyball) {
+      sportsToInsert.push({ name: 'Volleyball', createdAt: new Date(), updatedAt: new Date() });
+    }
+
+    if (sportsToInsert.length > 0) {
+      await queryInterface.bulkInsert('sports', sportsToInsert);
     }
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.bulkDelete('sports', { name: 'Basketball' });
+    await queryInterface.bulkDelete('sports', {
+      name: { [Sequelize.Op.in]: ['Basketball', 'Volleyball'] },
+    });
   },
 };

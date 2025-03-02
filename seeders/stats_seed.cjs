@@ -1,16 +1,16 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    // Dynamically import models (since they are ES modules)
     const { Sport, Stat } = await import('../models/index.js');
 
-    // Find Basketball Sport ID using Sequelize Model
+    // Find Sports
     const basketball = await Sport.findOne({ where: { name: 'Basketball' } });
+    const volleyball = await Sport.findOne({ where: { name: 'Volleyball' } });
 
-    if (!basketball) {
-      throw new Error('Basketball sport not found. Ensure it exists in the Sports table.');
+    if (!basketball || !volleyball) {
+      throw new Error('One or more sports not found. Ensure they exist in the Sports table.');
     }
 
-    // Default basketball stats
+    // Basketball Stats
     const basketballStats = [
       { name: 'Points', shortName: 'PTS' },
       { name: 'Assists', shortName: 'AST' },
@@ -26,11 +26,20 @@ module.exports = {
       { name: 'Three-Pointers Attempted', shortName: '3PA' },
     ];
 
-    // Check if stats already exist to avoid duplicates
-    const existingStats = await Stat.findAll({ where: { sportId: basketball.id } });
+    // Volleyball Stats
+    const volleyballStats = [
+      { name: 'Kills', shortName: 'K' },
+      { name: 'Assists', shortName: 'AST' },
+      { name: 'Digs', shortName: 'DIG' },
+      { name: 'Blocks', shortName: 'BLK' },
+      { name: 'Service Aces', shortName: 'ACE' },
+      { name: 'Errors', shortName: 'ERR' },
+      { name: 'Total Attacks', shortName: 'ATT' },
+    ];
 
-    if (existingStats.length === 0) {
-      // Insert basketball stats into the Stats table
+    // Insert Basketball Stats (Avoid Duplicates)
+    const existingBasketballStats = await Stat.findAll({ where: { sportId: basketball.id } });
+    if (existingBasketballStats.length === 0) {
       await Stat.bulkCreate(
         basketballStats.map((stat) => ({
           sportId: basketball.id,
@@ -39,17 +48,35 @@ module.exports = {
         }))
       );
     }
+
+    // Insert Volleyball Stats (Avoid Duplicates)
+    const existingVolleyballStats = await Stat.findAll({ where: { sportId: volleyball.id } });
+    if (existingVolleyballStats.length === 0) {
+      await Stat.bulkCreate(
+        volleyballStats.map((stat) => ({
+          sportId: volleyball.id,
+          name: stat.name,
+          shortName: stat.shortName,
+        }))
+      );
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
-    // Dynamically import models (since they are ES modules)
     const { Sport, Stat } = await import('../models/index.js');
 
-    // Delete only basketball-related stats using Sequelize model
+    // Find Sports
     const basketball = await Sport.findOne({ where: { name: 'Basketball' } });
+    const volleyball = await Sport.findOne({ where: { name: 'Volleyball' } });
 
+    // Delete Basketball Stats
     if (basketball) {
       await Stat.destroy({ where: { sportId: basketball.id } });
+    }
+
+    // Delete Volleyball Stats
+    if (volleyball) {
+      await Stat.destroy({ where: { sportId: volleyball.id } });
     }
   },
 };

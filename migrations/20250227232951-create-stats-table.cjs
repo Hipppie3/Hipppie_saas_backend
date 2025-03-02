@@ -17,7 +17,7 @@ module.exports = {
           model: 'sports',
           key: 'id',
         },
-        onDelete: 'CASCADE',
+        onDelete: 'SET NULL',
       },
       name: {
         type: Sequelize.STRING,

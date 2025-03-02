@@ -21,10 +21,15 @@ const Player = sequelize.define('player', {
   type: DataTypes.BLOB("long"),
   allowNull: true,
  },
- userId: {
+userId: {
   type: DataTypes.INTEGER,
   allowNull: false,
- },
+  references: {
+    model: "users",
+    key: "id",
+  },
+  onDelete: "SET NULL",
+},
  leagueId: {
   type: DataTypes.INTEGER,
   allowNull: true,

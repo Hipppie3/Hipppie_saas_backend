@@ -10,6 +10,15 @@ const League = sequelize.define('league', {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    references: {
+      model: "users",
+      key: "id",
+    },
+    onDelete: 'SET NULL',
+  },
+  sportId: {  
+    type: DataTypes.INTEGER,
+    allowNull: true,
   }
 }, {
   timestamps: true,

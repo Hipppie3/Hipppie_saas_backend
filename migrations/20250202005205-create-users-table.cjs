@@ -16,16 +16,21 @@ module.exports = {
       },
       email: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       role: {
         type: Sequelize.ENUM('super_admin', 'client_admin'),
         defaultValue: 'client_admin',
+      },
+      domain: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true,
       },
       createdAt: {
         allowNull: false,
