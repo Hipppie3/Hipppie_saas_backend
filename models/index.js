@@ -10,6 +10,12 @@ import Game from './game.js';
 
 // ✅ Define Associations with Explicit Aliases
 
+
+// User Model
+User.belongsToMany(Sport, { through: 'user_sports', foreignKey: 'userId', as: 'sports' });
+// Sport Model
+Sport.belongsToMany(User, { through: 'user_sports', foreignKey: 'sportId', as: 'users' });
+
 // User Associations
 User.hasMany(League, { foreignKey: 'userId', as: 'leagues' });
 User.hasMany(Team, { foreignKey: 'userId', as: 'teams' });
