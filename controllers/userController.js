@@ -31,11 +31,6 @@ export const registerUser = async (req, res) => {
       domain: normalizedDomain,
       role: role || "client_admin"
     });
-<<<<<<< HEAD
-    if (sportId) {
-      const sportIds = Array.isArray(sportId) ? sportId : [sportId];
-      await newUser.addSports(sportIds); // Add sports associations
-    }
     res.status(201).json({
       message: 'Registration successful',
       success: true,
@@ -44,18 +39,7 @@ export const registerUser = async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         domain: newUser.domain,
-        sportIds: sportId || [], // Send the sportIds back in the response
       }
-=======
-    res.status(201).json({ 
-      message: 'Registration successful', 
-      user: { 
-        id: newUser.id, 
-        username: newUser.username, 
-        domain: newUser.domain,
-        role: newUser.role,
-      } 
->>>>>>> 42bdbc9 (latest update)
     });
   } catch (error) {
     console.error('Error registering user:', error);
