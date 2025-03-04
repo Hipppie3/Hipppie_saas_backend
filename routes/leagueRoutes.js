@@ -1,5 +1,5 @@
 import express from 'express';
-import { createLeague, getLeagues, getLeagueById, updateLeague, deleteLeague, getLeaguesBySport } from '../controllers/leagueController.js';
+import { createLeague, getLeagues, getLeagueById, updateLeague, deleteLeague } from '../controllers/leagueController.js';
 import { createTeam, } from '../controllers/teamController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 
@@ -7,7 +7,7 @@ const router = express.Router();
 
 // ✅ Allow both logged-in and public users to fetch leagues
 router.get('/', getLeagues);
-router.get('/sports', getLeaguesBySport)
+// router.get('/sports', getLeaguesBySport)
 router.get('/:id', getLeagueById);
 
 

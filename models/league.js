@@ -16,10 +16,6 @@ const League = sequelize.define('league', {
     },
     onDelete: 'SET NULL',
   },
-  sportId: {  
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  }
 }, {
   timestamps: true,
 });

@@ -23,10 +23,6 @@ module.exports = {
         },
         onDelete: 'SET NULL', // If user is deleted, set leagues to null
       },
-      sportId: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

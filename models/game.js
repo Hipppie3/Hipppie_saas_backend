@@ -5,10 +5,6 @@ import { sequelize } from '../config/database.js';
 const Game = sequelize.define('game', {
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  sportId: {
-    type: DataTypes.INTEGER,
     allowNull: true,
   },
   leagueId: {

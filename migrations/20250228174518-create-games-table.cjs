@@ -10,15 +10,6 @@ module.exports = {
       },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id',
-        },
-        onDelete: 'SET NULL',
-      },
-      sportId: {
-        type: Sequelize.INTEGER,
         allowNull: true,
       },
       leagueId: {

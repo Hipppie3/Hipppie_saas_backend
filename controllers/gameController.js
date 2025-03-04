@@ -6,7 +6,7 @@ import moment from 'moment';
 export const createGame = async (req, res) => {
   console.log('yes')
   try {
-    const { sportId, leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
+    const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
 
     // Ensure teams are different
     if (team1_id === team2_id) {
@@ -14,7 +14,6 @@ export const createGame = async (req, res) => {
     }
 
     const newGame = await Game.create({
-      sportId,
       leagueId,
       team1_id,
       team2_id,

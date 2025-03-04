@@ -46,7 +46,7 @@ export const createPlayer = async (req, res) => {
     // Fetch the created player with full team details
     const playerWithTeam = await Player.findOne({
       where: { id: player.id },
-      include: { model: Team, as: "teams" }, // Ensure this matches your Sequelize association
+      include: { model: Team, as: "team" }, // Ensure this matches your Sequelize association
     });
     res.status(201).json({ message: "Player created successfully", player: playerWithTeam });
   } catch (error) {

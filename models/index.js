@@ -41,13 +41,13 @@ Sport.hasMany(Stat, { foreignKey: 'sportId', as: 'stats' });
 Stat.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
 // ✅ League <--> Sport Association
-Sport.hasMany(League, { foreignKey: 'sportId', as: 'leagues' });
-League.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
+// Sport.hasMany(League, { foreignKey: 'sportId', as: 'leagues' });
+// League.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
 
 // ✅ Game Associations
-Sport.hasMany(Game, { foreignKey: 'sportId', as: 'games' });
-Game.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
+// Sport.hasMany(Game, { foreignKey: 'sportId', as: 'games' });
+// Game.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
 League.hasMany(Game, { foreignKey: 'leagueId', as: 'games' });
 Game.belongsTo(League, { foreignKey: 'leagueId', as: 'league' });
