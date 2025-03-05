@@ -7,9 +7,17 @@ import Player from './player.js';
 import Sport from './sport.js';
 import Stat from './stat.js';
 import Game from './game.js';
+import PlayerGameStat from './playerGameStat.js';
 
-// ✅ Define Associations with Explicit Aliases
 
+Player.hasMany(PlayerGameStat, { foreignKey: 'player_id', as: 'gameStats' });
+PlayerGameStat.belongsTo(Player, { foreignKey: 'player_id', as: 'player' });
+
+Game.hasMany(PlayerGameStat, { foreignKey: 'game_id', as: 'playerStats' });
+PlayerGameStat.belongsTo(Game, { foreignKey: 'game_id', as: 'game' });
+
+Stat.hasMany(PlayerGameStat, { foreignKey: 'stat_id', as: 'statRecords' });
+PlayerGameStat.belongsTo(Stat, { foreignKey: 'stat_id', as: 'stat' });
 
 // User Model
 User.belongsToMany(Sport, { through: 'user_sports', foreignKey: 'userId', as: 'sports' });
@@ -40,14 +48,6 @@ Player.belongsTo(Team, { foreignKey: 'teamId', as: 'team' });
 Sport.hasMany(Stat, { foreignKey: 'sportId', as: 'stats' });
 Stat.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
-// ✅ League <--> Sport Association
-// Sport.hasMany(League, { foreignKey: 'sportId', as: 'leagues' });
-// League.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
-
-
-// ✅ Game Associations
-// Sport.hasMany(Game, { foreignKey: 'sportId', as: 'games' });
-// Game.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
 
 League.hasMany(Game, { foreignKey: 'leagueId', as: 'games' });
 Game.belongsTo(League, { foreignKey: 'leagueId', as: 'league' });
@@ -59,4 +59,4 @@ Team.hasMany(Game, { foreignKey: 'team2_id', as: 'awayGames' });
 Game.belongsTo(Team, { foreignKey: 'team2_id', as: 'awayTeam' });
 
 // ✅ Export models with explicit associations
-export { sequelize, User, League, Team, Player, Sport, Stat, Game };
+export { sequelize, User, League, Team, Player, Sport, Stat, Game, PlayerGameStat };

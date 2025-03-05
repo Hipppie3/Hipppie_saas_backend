@@ -1,19 +1,20 @@
-import {Game, Team, League} from '../models/index.js';
-import { Op } from 'sequelize';
-import moment from 'moment';
+import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat} from '../models/index.js';
 
 // ✅ Create a new game
 export const createGame = async (req, res) => {
   console.log('yes')
-  try {
-    const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
 
-    // Ensure teams are different
+    const {leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: No user session' });
+    }
     if (team1_id === team2_id) {
       return res.status(400).json({ error: "Teams must be different" });
     }
 
     const newGame = await Game.create({
+      userId: req.user.id,
       leagueId,
       team1_id,
       team2_id,
@@ -44,14 +45,60 @@ export const getGames = async (req, res) => {
 export const getGameById = async (req, res) => {
   try {
     const { id } = req.params;
-    const game = await Game.findByPk(id);
+
+    // Fetch the game with teams and players
+    const game = await Game.findByPk(id, {
+      include: [
+        {
+          model: Team,
+          as: "homeTeam",
+          include: [{ model: Player, as: "players" }],
+        },
+        {
+          model: Team,
+          as: "awayTeam",
+          include: [{ model: Player, as: "players" }],
+        },
+      ],
+    });
+
     if (!game) return res.status(404).json({ error: "Game not found" });
 
-    res.status(200).json(game);
+    console.log("Fetched game:", game);
+
+    // ✅ Fetch the user and include sports through the join table
+    const user = await User.findByPk(game.userId, {
+      include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
+    });
+
+    console.log("Fetched user:", user);
+    console.log("User sports:", user?.sports || []);
+
+    if (!user || !user.sports.length) {
+      return res.status(400).json({ error: "User has no associated sport" });
+    }
+
+    // ✅ Get the first associated sportId
+    const sportId = user.sports[0].id;
+
+    // ✅ Get all stats for the found sportId
+    const stats = await Stat.findAll({ where: { sportId } });
+
+    // ✅ Fetch player stats for this game
+    const playerStats = await PlayerGameStat.findAll({
+      where: { game_id: id },
+      include: [{ model: Stat, as: "stat" }],
+    });
+
+    res.status(200).json({ game, stats, playerStats });
   } catch (error) {
+    console.error("Error fetching game:", error);
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
 
 // ✅ Update game
 export const updateGameScores = async (req, res) => {

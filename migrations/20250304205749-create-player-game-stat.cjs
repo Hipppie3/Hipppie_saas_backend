@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("player_game_stats", {
@@ -10,7 +12,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "players",
+          model: "players", // ✅ Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -20,7 +22,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "games",
+          model: "games", // ✅ Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -30,7 +32,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "stats",
+          model: "stats", // ✅ Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -41,12 +43,12 @@ module.exports = {
         allowNull: false,
         defaultValue: 0,
       },
-      created_at: {
+      createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.fn("NOW"),
       },
-      updated_at: {
+      updatedAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.fn("NOW"),

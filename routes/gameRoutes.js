@@ -1,9 +1,10 @@
 import express from 'express';
-import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule } from '../controllers/gameController.js'
+import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule } from '../controllers/gameController.js';
+import { authenticateSession } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', createGame);
+router.post('/', authenticateSession, createGame);
 router.get('/', getGames);
 router.post('/generate-schedule', generateLeagueSchedule);
 router.get('/league/:leagueId', getGamesByLeague)

@@ -4,18 +4,20 @@ import { Op } from 'sequelize';
 
 // Register User
 export const registerUser = async (req, res) => {
-  const { username, email, password, sportId, domain } = req.body;
+  const { username, email, password, domain, sportIds } = req.body;
   const saltRounds = 10;
   try {
     // Normalize domain (lowercase) and ensure email/password can be empty
     const normalizedDomain = domain ? domain.toLowerCase() : null;
     const normalizedEmail = email && email.trim() !== "" ? email.toLowerCase() : null;
     const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : null;
+    
     // Check if username already exists
     const userNameExists = await User.findOne({ where: { username } });
     if (userNameExists) {
       return res.status(403).json({ error: 'Username already exists' });
     }
+
     // Check if email already exists but only if email is provided
     if (normalizedEmail) {
       const emailExists = await User.findOne({ where: { email: normalizedEmail } });
@@ -23,29 +25,34 @@ export const registerUser = async (req, res) => {
         return res.status(403).json({ error: 'Email already registered' });
       }
     }
-    // Create the new user without associating sportId yet
+
+    // Create the new user
     const newUser = await User.create({
       username,
       email: normalizedEmail,
-      password: hashedPassword, // Password can be null
+      password: hashedPassword,
       domain: normalizedDomain,
-      role: role || "client_admin"
     });
-    res.status(201).json({
-      message: 'Registration successful',
-      success: true,
-      user: {
-        id: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        domain: newUser.domain,
-      }
-    });
+
+    // Associate the user with sports
+if (sportIds && sportIds.length > 0) {
+  const sports = await Sport.findAll({ where: { id: sportIds } });
+  await newUser.setSports(sports); // ✅ Ensure Sequelize saves the association
+}
+const userWithSports = await User.findByPk(newUser.id, {
+  include: { model: Sport, as: "sports" },
+});
+res.status(201).json({
+  message: "Registration successful",
+  success: true,
+  user: userWithSports, // ✅ Now includes sports
+});
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).json({ error: 'Registration failed' });
   }
 };
+
 
 
 
@@ -65,7 +72,7 @@ export const loginUser = async (req, res) => {
     }
     // ✅ If the user has no password set, allow login
     if (!user.password) {
-      req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain, sportId: user.sportId || null };
+      req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain };
       return res.status(200).json({ message: 'Login successful (no password required)', user: req.session.user });
     }
     // ✅ If a password is set, validate it
@@ -73,7 +80,7 @@ export const loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
-    req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain, sportId: user.sportId || null };
+    req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain};
     res.status(200).json({ message: 'Login successful', user: req.session.user });
   } catch (error) {
     console.error('Error logging in:', error);
@@ -110,7 +117,6 @@ export const checkAuth = (req, res) => {
         username: req.session.user.username, 
         role: req.session.user.role, 
         domain: req.session.user.domain, 
-        sportId: req.session.user.sportId || null
       }
     });
   }
@@ -119,44 +125,41 @@ export const checkAuth = (req, res) => {
 
 
 
-
-// Update User
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { username, oldPassword, newPassword, email, domain, sportId } = req.body;
+  const { username, oldPassword, newPassword, email, domain, sportIds } = req.body;
   const requestingUser = req.user;
+
   try {
-    const user = await User.findByPk(id, {
-      include: [{
-        model: Sport,
-        as: 'sports', // Correct alias specified here
-        attributes: ['id', 'name'], // Include both id and name of the sport
-        through: { attributes: [] }, // Exclude the join table attributes
-      }]
-    });
+    const user = await User.findByPk(id, { include: { model: Sport, as: "sports" } });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    // Regular users can only update their own profile
+
+    // Ensure only authorized users can update
     if (requestingUser.role !== 'super_admin' && requestingUser.id !== user.id) {
       return res.status(403).json({ error: 'You can only update your own profile' });
     }
+
     // Check if username is unique
     if (username && username !== user.username) {
       const existingUser = await User.findOne({ where: { username } });
       if (existingUser) return res.status(400).json({ error: 'Username already taken' });
     }
+
     // Check if email is unique
     if (email && email !== user.email) {
       const existingEmail = await User.findOne({ where: { email } });
       if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
     }
+
     const normalizedDomain = domain ? domain.toLowerCase() : user.domain;
     if (domain && domain !== user.domain) {
       const existingDomain = await User.findOne({ where: { domain: normalizedDomain } });
       if (existingDomain) return res.status(400).json({ error: 'Domain already in use' });
     }
-    // Handle password update if necessary
+
+    // Handle password update
     let hashedPassword;
     if (newPassword) {
       if (!oldPassword) {
@@ -168,45 +171,36 @@ export const updateUser = async (req, res) => {
       }
       hashedPassword = await bcrypt.hash(newPassword, 10);
     }
-    // Update user data
+
+    // Update user details
     await user.update({
       username: username || user.username,
       password: hashedPassword || user.password,
       email: email !== undefined && email.trim() === "" ? null : email,
       domain: domain !== undefined && domain.trim() === "" ? null : normalizedDomain,
     });
-    // Handle the user_sports join table update (for multiple sports)
-    if (sportId && Array.isArray(sportId)) {
-      // Clear existing sports associations
-      await user.setSports([]); 
-      // Add the new sports associations from the provided sportId array
-      await user.addSports(sportId); 
+
+    // ✅ Update sports associations if `sportIds` is provided
+    if (sportIds && Array.isArray(sportIds)) {
+      const sports = await Sport.findAll({ where: { id: sportIds } });
+      await user.setSports(sports); // Updates the user_sports table
     }
-    // Update session if necessary
-    if (requestingUser.id === user.id) {
-      req.session.user = {
-        id: user.id,
-        username: user.username,
-        domain: user.domain,
-        sportIds: sportId || user.sportIds, // Update session sportIds if provided
-      };
-    }
+
+    // Fetch updated user with sports
+    const updatedUser = await User.findByPk(id, { include: { model: Sport, as: "sports" } });
+
     res.status(200).json({
       message: 'User updated successfully',
       success: true,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        domain: user.domain,
-        sportIds: sportId || user.sportIds, // Return the updated sportIds
-      }
+      user: updatedUser, // ✅ Now includes sports
     });
+
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ message: 'Failed to update user' });
   }
 };
+
 
 
 // Delete User
@@ -246,41 +240,26 @@ export const getUsers = async (req, res) => {
   const requestingUser = req.user;
   console.log(requestingUser);
 
-  // Ensure that only super admins can view all users
   if (requestingUser.role !== 'super_admin') {
     return res.status(403).json({ error: 'Only super admin can view users' });
   }
-try {
-  const users = await User.findAll({
-    attributes: { exclude: ['password'] }, // Exclude password for security
-    include: [
-      {
-        model: Sport,  // Include the Sport model
-        as: 'sports',  // The alias you used in the association
-        attributes: ['id', 'name'], // Only include the sportId
-        through: { attributes: [] } // Exclude the join table attributes
-      }
-    ]
-  });
-  // Return the users with the sportId included
-  const formattedUsers = users.map(user => ({
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    domain: user.domain,
-    sportIds: user.sports.length ? user.sports.map(sport => sport.id) : null,  // Return sportIds or null if no sports
-    sportNames: user.sports.length ? user.sports.map(sport => sport.name) : null,
-    role: user.role,
-  }));
-  res.status(200).json({
-    message: 'Users fetched successfully',
-    users: formattedUsers.length ? formattedUsers : [],
-  });
-} catch (error) {
-  console.error('Error fetching users:', error);
-  res.status(500).json({ error: 'Failed to fetch users' });
-}
+
+  try {
+    const users = await User.findAll({
+      attributes: { exclude: ['password'] },
+      include: { model: Sport, as: "sports" } // ✅ Ensure sports are fetched
+    });
+
+    res.status(200).json({
+      message: 'Users fetched successfully',
+      users: users.length ? users : [],
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 };
+
 
 
 // Get User By ID
@@ -293,14 +272,6 @@ export const getUserById = async (req, res) => {
   try {
     const user = await User.findByPk(id, {
       attributes: ['id', 'username', 'email', 'role', 'domain'], // Exclude password
-      include: [
-        {
-          model: Sport, // Include the Sport model to fetch associated sports
-          as: 'sports',  // Alias used in the association
-          attributes: ['id', 'name'], // Only include the sportId
-          through: { attributes: [] } // Exclude the join table attributes
-        }
-      ]
     });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -313,8 +284,6 @@ export const getUserById = async (req, res) => {
         email: user.email,
         role: user.role,
         domain: user.domain,
-        sportIds: user.sports.length ? user.sports.map(sport => sport.id) : null,  // Return sportIds or null if no sports
-        sportNames: user.sports.length ? user.sports.map(sport => sport.name) : null,
       }
     });
   } catch (error) {

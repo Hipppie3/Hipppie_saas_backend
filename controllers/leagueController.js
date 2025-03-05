@@ -3,7 +3,6 @@ import { League, Team, Player, User, Game } from '../models/index.js'
 // Create League
 export const createLeague = async (req, res) => {
   const {name} = req.body;
-  const {id} = req.params
   if (!name) {
   return res.status(401).json({ message: 'League name required '})
   };
