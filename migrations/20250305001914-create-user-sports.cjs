@@ -8,7 +8,7 @@ module.exports = {
       },
       userId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "users",
           key: "id",
@@ -18,7 +18,7 @@ module.exports = {
       },
       sportId: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "sports",
           key: "id",

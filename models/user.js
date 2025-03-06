@@ -30,7 +30,7 @@ const User = sequelize.define('user', {
     type: DataTypes.STRING,
     allowNull: true,
     unique: true,
-  }
+  },
 }, {
   timestamps: true, // Adds createdAt and updatedAt automatically
 });

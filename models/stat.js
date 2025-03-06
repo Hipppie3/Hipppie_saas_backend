@@ -9,7 +9,7 @@ const Stat = sequelize.define('stat', {
   },
   sportId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: 'sports',
       key: 'id',

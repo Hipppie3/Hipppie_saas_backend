@@ -11,7 +11,7 @@ const UserSports = sequelize.define(
     },
     userId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "users",
         key: "id",
@@ -21,7 +21,7 @@ const UserSports = sequelize.define(
     },
     sportId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: "sports",
         key: "id",

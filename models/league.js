@@ -9,7 +9,7 @@ const League = sequelize.define('league', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
     references: {
       model: "users",
       key: "id",

@@ -1,9 +1,10 @@
 import express from 'express';
-import { getStats, getStatsBySport } from '../controllers/statController.js';
+import { getUserStats } from '../controllers/statController.js';
 
 const router = express.Router();
 
-router.get('/', getStats)
-router.get('/:id', getStatsBySport); // Example: /api/stats/Basketball
+router.get('/user/:userId', getUserStats)
+
+
 
 export default router;

@@ -10,9 +10,9 @@ module.exports = {
       },
       player_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          model: "players", // ✅ Ensuring foreign key reference
+          model: "players", // Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -20,9 +20,9 @@ module.exports = {
       },
       game_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          model: "games", // ✅ Ensuring foreign key reference
+          model: "games", // Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",
@@ -30,9 +30,9 @@ module.exports = {
       },
       stat_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          model: "stats", // ✅ Ensuring foreign key reference
+          model: "stats", // Ensuring foreign key reference
           key: "id",
         },
         onUpdate: "CASCADE",

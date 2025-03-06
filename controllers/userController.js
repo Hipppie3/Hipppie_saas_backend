@@ -4,20 +4,18 @@ import { Op } from 'sequelize';
 
 // Register User
 export const registerUser = async (req, res) => {
-  const { username, email, password, domain, sportIds } = req.body;
+  const { username, email, password, domain, sportIds, role } = req.body;
   const saltRounds = 10;
   try {
     // Normalize domain (lowercase) and ensure email/password can be empty
     const normalizedDomain = domain ? domain.toLowerCase() : null;
     const normalizedEmail = email && email.trim() !== "" ? email.toLowerCase() : null;
     const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : null;
-    
     // Check if username already exists
     const userNameExists = await User.findOne({ where: { username } });
     if (userNameExists) {
       return res.status(403).json({ error: 'Username already exists' });
     }
-
     // Check if email already exists but only if email is provided
     if (normalizedEmail) {
       const emailExists = await User.findOne({ where: { email: normalizedEmail } });
@@ -25,15 +23,14 @@ export const registerUser = async (req, res) => {
         return res.status(403).json({ error: 'Email already registered' });
       }
     }
-
     // Create the new user
     const newUser = await User.create({
       username,
       email: normalizedEmail,
       password: hashedPassword,
       domain: normalizedDomain,
+      role
     });
-
     // Associate the user with sports
 if (sportIds && sportIds.length > 0) {
   const sports = await Sport.findAll({ where: { id: sportIds } });

@@ -1,36 +1,27 @@
-import { Sport, Stat } from '../models/index.js';
+import {Sport, User, Stat} from '../models/index.js'
 
-export const getStats = async (req, res) => {
- try {
-  const stats = await Stat.findAll()
-  res.status(200).json(stats)
- } catch (error) {
-  console.error("Error fetching stats:", error);
-  res.status(500).json({ message: 'Server error', error })
- }
-}
 
-export const getStatsBySport = async (req, res) => {
+export const getUserStats = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { userId } = req.params;
 
-    // Find sport
-    const sport = await Sport.findByPk(id);
+    // ✅ Fetch the user with their associated sports
+    const user = await User.findByPk(userId, {
+      include: [{ model: Sport, as: "sports", include: [{ model: Stat, as: "stats" }] }],
+    });
 
-    if (!sport) {
-      return res.status(404).json({ message: `Sport ${sportName} not found.` });
+    if (!user || user.sports.length === 0) {
+      return res.status(404).json({ error: "No sport found for this user" });
     }
 
-    // Find stats linked to the sport
-    const stats = await Stat.findAll({ where: { sportId: sport.id } });
-
-    if (!stats.length) {
-      return res.status(404).json({ message: `No stats found for ${sportName}.` });
-    }
+    // ✅ Extract the stats from the user's first sport
+    const stats = user.sports[0].stats;
 
     res.status(200).json(stats);
   } catch (error) {
-    console.error('❌ Error fetching stats:', error);
-    res.status(500).json({ message: 'Server error', error });
+    console.error("Error fetching user stats:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
