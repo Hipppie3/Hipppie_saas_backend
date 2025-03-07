@@ -29,11 +29,41 @@ export const createLeague = async (req, res) => {
 // Get All Leagues
 export const getLeagues = async (req, res) => {
   try {
-    const leagues = await League.findAll({
-      include: [{ model: Team, as: 'teams' }],
-    });
+    const { domain } = req.query;
+    const userId = req.session?.user?.id; // ✅ Now optional
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
+
+    let leagues = [];
+
+    if (isSuperAdmin) {
+      // Super admin can see all leagues
+      leagues = await League.findAll({
+        include: [{ model: Team, as: 'teams' }],
+      });
+    } else if (domain) {
+      // Find the user associated with the domain
+      const user = await User.findOne({ where: { domain } });
+      if (!user) {
+        return res.status(404).json({ message: "No leagues found for this domain" });
+      }
+      leagues = await League.findAll({
+        where: { userId: user.id },
+        include: [{ model: Team, as: 'teams' }],
+      });
+    } else if (userId) {
+      // Normal user can only see their own leagues
+      leagues = await League.findAll({
+        where: { userId },
+        include: [{ model: Team, as: 'teams' }],
+      });
+    } else {
+      // Public view: Show all leagues (optional - decide if public should see all)
+      leagues = await League.findAll({
+        include: [{ model: Team, as: 'teams' }],
+      });
+    }
     const formattedLeagues = leagues.map(league => ({
-      ...league.dataValues, // Directly access Sequelize's dataValues
+      ...league.dataValues,
       teamsCount: league.teams ? league.teams.length : 0,
     }));
     res.status(200).json({
@@ -45,6 +75,7 @@ export const getLeagues = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch leagues" });
   }
 };
+
 
 
 // Get League By Id

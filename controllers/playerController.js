@@ -2,7 +2,7 @@ import { League, Team, Player, User, PlayerGameStat, Stat, Game } from '../model
 
 // Create Player with Image Upload
 export const createPlayer = async (req, res) => {
-  const { firstName, lastName, age, leagueId, teamId } = req.body;
+  const { firstName, lastName, age, teamId } = req.body; // Remove leagueId from body
   const image = req.file ? req.file.buffer : null;
 
   if (!firstName) {
@@ -13,26 +13,22 @@ export const createPlayer = async (req, res) => {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized: No user session" });
     }
+
     // Convert values to numbers
     const parsedAge = age ? parseInt(age, 10) : null;
-    const parsedLeagueId = leagueId ? parseInt(leagueId, 10) : null;
     const parsedTeamId = teamId ? parseInt(teamId, 10) : null;
     if (age && isNaN(parsedAge)) return res.status(400).json({ message: "Invalid age format" });
-    if (leagueId && isNaN(parsedLeagueId)) return res.status(400).json({ message: "Invalid leagueId format" });
     if (teamId && isNaN(parsedTeamId)) return res.status(400).json({ message: "Invalid teamId format" });
-    // Validate League and Team Ownership
-    let league = parsedLeagueId
-      ? await League.findOne({ where: { id: parsedLeagueId, userId: req.user.id } })
-      : null;
-    if (parsedLeagueId && !league) {
-      return res.status(404).json({ message: "League not found or not owned by user" });
+
+    // Fetch team and get leagueId from it
+    const team = parsedTeamId ? await Team.findByPk(parsedTeamId) : null;
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
     }
-    let team = parsedTeamId
-      ? await Team.findOne({ where: { id: parsedTeamId, userId: req.user.id } })
-      : null;
-    if (parsedTeamId && !team) {
-      return res.status(404).json({ message: "Team not found or not owned by user" });
-    }
+
+    // ✅ Automatically set leagueId from team
+    const leagueId = team.leagueId;
+
     // Create Player
     const player = await Player.create({
       firstName,
@@ -40,14 +36,16 @@ export const createPlayer = async (req, res) => {
       age: parsedAge,
       image,
       userId: req.user.id,
-      leagueId: parsedLeagueId,
+      leagueId, // ✅ Set leagueId from team
       teamId: parsedTeamId,
     });
+
     // Fetch the created player with full team details
     const playerWithTeam = await Player.findOne({
       where: { id: player.id },
-      include: { model: Team, as: "team" }, // Ensure this matches your Sequelize association
+      include: { model: Team, as: "team" },
     });
+
     res.status(201).json({ message: "Player created successfully", player: playerWithTeam });
   } catch (error) {
     console.error("Error creating player:", error);
@@ -57,14 +55,60 @@ export const createPlayer = async (req, res) => {
 
 
 
+
 export const getPlayers = async (req, res) => {
   try {
-    const players = await Player.findAll({
-      include: [
-        { model: League, as: "league" },
-        { model: Team, as: "team" },
-      ],
-    });
+    const { domain } = req.query;
+    const userId = req.session.user?.id;
+    const isSuperAdmin = req.session.user?.role === "super_admin";
+
+    console.log(domain)
+
+    let players = [];
+    if (isSuperAdmin) {
+      // Super admin can see all players
+      players = await Player.findAll({
+        include: [
+          { model: League, as: "league" },
+          { model: Team, as: "team" },
+        ],
+      });
+    } else if (domain) {
+      // Find the user associated with the domain
+      const user = await User.findOne({ where: { domain } });
+      console.log(user.id)
+      if (!user) {
+        return res.status(404).json({ message: "No players found for this domain" });
+      }
+      const leagues = await League.findAll({ where: { userId: user.id } });
+      console.log("Leagues Found:", leagues);
+
+      players = await Player.findAll({
+        include: [
+          {
+            model: League,
+            as: "league",
+            where: { userId: user.id }, // Ensure players are from leagues belonging to the domain user
+          },
+          { model: Team, as: "team" },
+        ],
+      });
+    } else if (userId) {
+      // Normal user can only see players from their own leagues
+      players = await Player.findAll({
+        include: [
+          {
+            model: League,
+            as: "league",
+            where: { userId }, // Ensure players are from leagues belonging to the user
+          },
+          { model: Team, as: "team" },
+        ],
+      });
+    } else {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
     const formattedPlayers = players.map((player) => ({
       ...player.toJSON(),
       image: player.image
@@ -81,6 +125,7 @@ export const getPlayers = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch players" });
   }
 };
+
 
 
 
@@ -131,27 +176,33 @@ export const getPlayerById = async (req, res) => {
 
 export const updatePlayer = async (req, res) => {
   try {
-
-
     const { firstName, lastName, age, teamId } = req.body;
     const image = req.file ? req.file.buffer : null; // ✅ Store raw binary data
-
     const player = await Player.findByPk(req.params.id);
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
     }
+    let leagueId = player.leagueId; // Default to existing leagueId
 
+    // ✅ If teamId is updated, fetch the new team to get the correct leagueId
+    if (teamId) {
+      const team = await Team.findByPk(teamId);
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      leagueId = team.leagueId; // ✅ Assign correct leagueId
+    }
     // ✅ Update fields only if new values are provided
     player.firstName = firstName || player.firstName;
     player.lastName = lastName || player.lastName;
     player.age = age ? parseInt(age, 10) : player.age;
     player.teamId = teamId ? parseInt(teamId, 10) : player.teamId;
+    player.leagueId = leagueId; // ✅ Ensure leagueId updates
 
     // ✅ Store image as BLOB (binary) in the database
     if (image) {
       player.image = image;
     }
-
     await player.save();
     res.json({ message: "Player updated successfully", player });
   } catch (error) {
