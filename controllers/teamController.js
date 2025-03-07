@@ -1,4 +1,4 @@
-import { League, Team, Player, User } from '../models/index.js'
+import { League, Team, Player, User, Game } from '../models/index.js'
 
 
 // Create Team
@@ -41,14 +41,14 @@ try {
   if (isSuperAdmin) {
     teams = await Team.findAll({ include: [
     { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
   ] });
   } else if (userId) {
     teams = await Team.findAll({
       where: {userId},
       include: [
     { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
   ]
     });
   } else if (domain) {
@@ -60,7 +60,7 @@ try {
       where: { userId: user.id },
       include: [
     { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
+    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
   ]
     });
   } else {
@@ -79,45 +79,86 @@ try {
 
 // Get Team By ID
 export const getTeamById = async (req, res) => {
-const { id } = req.params;
-console.log("Fetching team by ID:", id);
-try {
-  const userId = req.session?.user?.id;
-  const domain = req.query.domain;
-  const isSuperAdmin = req.session?.user?.role === "super_admin";
+  const { id } = req.params;
+  console.log("Fetching team by ID:", id);
 
-  let team; 
-  if (isSuperAdmin) {
-    team = await Team.findByPk(id, { include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
-  ] });
-  } else if (userId) {
-    team = await Team.findOne({ where: {id, userId}, include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
-  ]});
-  } else if (domain) {
-    const user = await User.findOne({ where: { domain }});
-    if (!user) {
-      return res.status(404).json({ message: "No teams found for this domain" });
+  try {
+    const userId = req.session?.user?.id;
+    const domain = req.query.domain;
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
+
+    let team;
+
+    const includeOptions = [
+      { model: League, as: 'league' },
+      { model: Player, as: 'players' },
+      {
+        model: Game,
+        as: 'homeGames',
+        attributes: ['id', 'date', 'status', 'score_team1', 'score_team2', 'team1_id', 'team2_id'],
+        include: [
+          { model: Team, as: 'homeTeam', attributes: ['id', 'name'] },
+          { model: Team, as: 'awayTeam', attributes: ['id', 'name'] }
+        ]
+      },
+      {
+        model: Game,
+        as: 'awayGames',
+        attributes: ['id', 'date', 'status', 'score_team1', 'score_team2', 'team1_id', 'team2_id'],
+        include: [
+          { model: Team, as: 'homeTeam', attributes: ['id', 'name'] },
+          { model: Team, as: 'awayTeam', attributes: ['id', 'name'] }
+        ]
+      }
+    ];
+
+    if (isSuperAdmin) {
+      team = await Team.findByPk(id, { include: includeOptions });
+    } else if (userId) {
+      team = await Team.findOne({ where: { id, userId }, include: includeOptions });
+    } else if (domain) {
+      const user = await User.findOne({ where: { domain } });
+      if (!user) {
+        return res.status(404).json({ message: "No teams found for this domain" });
+      }
+      team = await Team.findOne({ where: { id, userId: user.id }, include: includeOptions });
+    } else {
+      return res.status(403).json({ message: "Unauthorized" });
     }
-    team = await Team.findOne({ where: { id, userId: user.id }, include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' }  // ✅ Now it correctly fetches players
-  ]})
-  } else {
-    return res.status(403).json({ message: "Unauthorized" });
-  }
-  if (!team) {
-    return res.status(404).json({ message: "Team not fuond"});
-  }
-  res.status(200).json({ message: "Team fetched successfully", team});
+
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    // Merge home and away games into one `games` array
+    const games = [...team.homeGames, ...team.awayGames].map(game => ({
+      id: game.id,
+      date: game.date,
+      status: game.status,
+      score_team1: game.score_team1,
+      score_team2: game.score_team2,
+      team1: game.homeTeam ? game.homeTeam.name : 'Unknown',
+      team2: game.awayTeam ? game.awayTeam.name : 'Unknown'
+    }));
+
+    // Return only necessary data
+    res.status(200).json({
+      message: "Team fetched successfully",
+      team: {
+        id: team.id,
+        name: team.name,
+        league: team.league,
+        players: team.players,
+        games
+      }
+    });
+
   } catch (error) {
-  console.error("Error fetching teams:", error);
-  res.status(500).json({ message: "Failed to fetch teams"})
+    console.error("Error fetching teams:", error);
+    res.status(500).json({ message: "Failed to fetch teams" });
   }
-}
+};
+
 
 export const updateTeam = async (req, res) => {
   const {name, leagueId} = req.body;

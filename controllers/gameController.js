@@ -12,7 +12,6 @@ export const createGame = async (req, res) => {
     if (team1_id === team2_id) {
       return res.status(400).json({ error: "Teams must be different" });
     }
-
     const newGame = await Game.create({
       userId: req.user.id,
       leagueId,
@@ -23,7 +22,6 @@ export const createGame = async (req, res) => {
       score_team1: score_team1 || 0,
       score_team2: score_team2 || 0,
     });
-
     res.status(201).json(newGame);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -96,16 +94,21 @@ export const updateGameScores = async (req, res) => {
   try {
     const { id } = req.params;
     const { score_team1, score_team2 } = req.body;
+
     const game = await Game.findByPk(id);
     if (!game) return res.status(404).json({ error: "Game not found" });
+
     game.score_team1 = score_team1;
     game.score_team2 = score_team2;
+    game.status = "completed"; // Auto-update status
     await game.save();
+
     res.status(200).json(game);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 // Delete a game
 export const deleteGame = async (req, res) => {
@@ -138,6 +141,10 @@ export const getGamesByLeague = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch games' });
   }
 };
+
+
+
+
 
 // Function to generate a league schedule
 export const generateLeagueSchedule = async (req, res) => {
