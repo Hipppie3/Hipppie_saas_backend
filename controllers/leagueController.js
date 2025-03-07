@@ -24,48 +24,28 @@ export const createLeague = async (req, res) => {
   }
 };
 
+
+
 // Get All Leagues
 export const getLeagues = async (req, res) => {
   try {
-    let leagues;
-    const userId = req.session?.user?.id; // ✅ Get user ID if logged in
-    const domain = req.query.domain; // ✅ Get domain if public user
-    const isSuperAdmin = req.session?.user?.role === "super_admin"; // ✅ Super admin check
-
-    if (isSuperAdmin) {
-      leagues = await League.findAll({ include: [
-    { model: Team, as: 'teams' },  
-  ] });
-    } else if (userId) {
-      leagues = await League.findAll({ 
-        where: { userId }, 
-        include: [
-    { model: Team, as: 'teams' }, 
-  ]
-      });
-    } else if (domain) {
-      const user = await User.findOne({ where: { domain } });
-      if (!user) {
-        return res.status(404).json({ message: "No leagues found for this domain" });
-      }
-      leagues = await League.findAll({ 
-        where: { userId: user.id }, 
-        include: [
-    { model: Team, as: 'teams' },  
-  ] 
-      });
-    } else {
-      return res.status(403).json({ message: "Unauthorized or no leagues available" });
-    }
+    const leagues = await League.findAll({
+      include: [{ model: Team, as: 'teams' }],
+    });
+    const formattedLeagues = leagues.map(league => ({
+      ...league.dataValues, // Directly access Sequelize's dataValues
+      teamsCount: league.teams ? league.teams.length : 0,
+    }));
     res.status(200).json({
-      message: leagues.length ? "Leagues fetched successfully" : "No leagues found",
-      leagues
+      message: formattedLeagues.length ? "Leagues fetched successfully" : "No leagues found",
+      leagues: formattedLeagues,
     });
   } catch (error) {
     console.error("Error fetching leagues:", error);
     res.status(500).json({ message: "Failed to fetch leagues" });
   }
 };
+
 
 // Get League By Id
 export const getLeagueById = async (req, res) => {
@@ -170,38 +150,19 @@ export const updateLeague = async (req, res) => {
 
 // Delete League
 export const deleteLeague = async (req, res) => {
- const { id } = req.params;
-
- try {
+const { id } = req.params;
+try {
   const league = await League.findByPk(id);
   console.log(league)
   if (!league) {
-   return res.status(404).json({ message: "League not found" });
+  return res.status(404).json({ message: "League not found" });
   }
   await league.destroy();
   res.status(200).json({ success: true, message: "League deleted successfully" });
- } catch (error) {
+} catch (error) {
   console.error("Error deleting league:", error);
   res.status(500).json({ message: "Failed to delete league" });
- }
+}
 };
 
 
-// export const getLeaguesBySport = async (req, res) => {
-//   try {
-//     const { sportId } = req.query; // Get sportId from query parameters
-//     const whereCondition = {};
-
-//     if (sportId) whereCondition.sportId = sportId; // ✅ Filter if sportId is provided
-
-//     const leagues = await League.findAll({
-//       where: whereCondition,
-//       include: [{ model: Team, as: 'teams' }], // Include teams if needed
-//     });
-
-//     res.status(200).json({ leagues });
-//   } catch (error) {
-//     console.error("Error fetching leagues:", error);
-//     res.status(500).json({ message: "Failed to fetch leagues" });
-//   }
-// };

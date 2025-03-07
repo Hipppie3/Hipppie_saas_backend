@@ -1,4 +1,4 @@
-import { League, Team, Player, User } from '../models/index.js'
+import { League, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js'
 
 // Create Player with Image Upload
 export const createPlayer = async (req, res) => {
@@ -59,44 +59,19 @@ export const createPlayer = async (req, res) => {
 
 export const getPlayers = async (req, res) => {
   try {
-    let players;
-    const userId = req.session?.user?.id;
-    const domain = req.query.domain;
-    const isSuperAdmin = req.session?.user?.role === "super_admin";
-    if (isSuperAdmin) {
-      players = await Player.findAll({ include: [
-        { model: League, as: 'league'},
-        { model: Team, as: 'team'}
-      ]});
-    } else if (userId) {
-      players = await Player.findAll({
-        where: {userId},
-        include: [
-        { model: League, as: 'league'},
-        { model: Team, as: 'team'}
-        ]
-      });
-    } else if (domain) {
-      const user = await User.findOne({ where: {domain}})
-      if (!user) {
-        return res.status(404).json({ message: "No Players found for this domain" });
-      }
-      players = await Player.findAll({
-      where: { userId: user.id},
+    const players = await Player.findAll({
       include: [
         { model: League, as: "league" },
-        { model: Team, as: "team"}
-      ]
+        { model: Team, as: "team" },
+      ],
     });
-  } else {
-    return res.status(403).json({ message: "Unauthorized or no players available" });
-  }
     const formattedPlayers = players.map((player) => ({
       ...player.toJSON(),
-      image: player.image ? `data:image/jpeg;base64,${player.image.toString("base64")}` : null
-      
+      image: player.image
+        ? `data:image/jpeg;base64,${player.image.toString("base64")}` // ✅ Keep image data
+        : null,
+      imageAvailable: !!player.image, // ✅ Also indicate if an image exists
     }));
-
     res.status(200).json({
       message: formattedPlayers.length ? "Players fetched successfully" : "No players found",
       players: formattedPlayers,
@@ -108,60 +83,42 @@ export const getPlayers = async (req, res) => {
 };
 
 
+
 export const getPlayerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.session?.user?.id;
-    const domain = req.query.domain;
-    const isSuperAdmin = req.session?.user?.role === "super_admin";
-
-    let player;
-
-    if (isSuperAdmin) {
-      player = await Player.findByPk(id, {
-        include: [
-          { model: Team, as: "team" },
-          { model: League, as: "league" },
-        ],
-      });
-    } else if (userId) {
-      player = await Player.findOne({
-        where: { id, userId },
-        include: [
-          { model: Team, as: "team" },
-          { model: League, as: "league" },
-        ],
-      });
-    } else if (domain) {
-      const user = await User.findOne({ where: { domain } });
-      if (!user) {
-        return res.status(404).json({ message: "No players found for this domain" });
-      }
-
-      player = await Player.findOne({
-        where: { id, userId: user.id },
-        include: [
-          { model: Team, as: "team" },
-          { model: League, as: "league" },
-        ],
-      });
-    } else {
-      return res.status(403).json({ message: "Unauthorized or no players available" });
-    }
-
-    if (!player) {
-      return res.status(404).json({ message: "Player not found" });
-    }
-
-    // ✅ Convert BLOB image to Base64 before sending response
-    const playerData = {
-      ...player.toJSON(),
-      image: player.image ? `data:image/jpeg;base64,${player.image.toString("base64")}` : null,
-    };
-
+    const player = await Player.findByPk(id, {
+      include: [
+        { model: Team, as: "team" },
+        { model: League, as: "league" },
+        {
+          model: PlayerGameStat,
+          as: "gameStats",
+          include: [
+            { model: Stat, as: "stat" },
+            {
+              model: Game,
+              as: "game",
+              attributes: ["id", "date"], // ✅ Fetch game date only
+              include: [
+                { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+                { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    if (!player) return res.status(404).json({ message: "Player not found" });
     res.status(200).json({
       message: "Player fetched successfully",
-      player: playerData,
+      player: {
+        ...player.toJSON(),
+        image: player.image
+          ? `data:image/jpeg;base64,${player.image.toString("base64")}` // ✅ Keep image data
+          : null,
+        imageAvailable: !!player.image, // ✅ Also indicate if an image exists
+      },
     });
   } catch (error) {
     console.error("Error fetching player:", error);
@@ -171,23 +128,26 @@ export const getPlayerById = async (req, res) => {
 
 
 
+
 export const updatePlayer = async (req, res) => {
   try {
+
+
     const { firstName, lastName, age, teamId } = req.body;
-    const image = req.file ? req.file.buffer : null; 
+    const image = req.file ? req.file.buffer : null; // ✅ Store raw binary data
 
     const player = await Player.findByPk(req.params.id);
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
     }
 
-    // Ensure parsed integer values
+    // ✅ Update fields only if new values are provided
     player.firstName = firstName || player.firstName;
     player.lastName = lastName || player.lastName;
     player.age = age ? parseInt(age, 10) : player.age;
     player.teamId = teamId ? parseInt(teamId, 10) : player.teamId;
 
-    // Update image if a new one is provided
+    // ✅ Store image as BLOB (binary) in the database
     if (image) {
       player.image = image;
     }
@@ -199,6 +159,8 @@ export const updatePlayer = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 
 
