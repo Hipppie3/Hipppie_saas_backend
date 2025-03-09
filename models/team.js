@@ -19,7 +19,19 @@ userId: {
   leagueId: {
   type: DataTypes.INTEGER,
   allowNull: true,
-}
+},
+  wins: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0,
+},
+  losses: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0,
+},
+  ties: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0,
+},
 }, {
 timestamps: true,
 });

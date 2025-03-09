@@ -33,48 +33,103 @@ export const createTeam = async (req, res) => {
 
 // Get All Teams
 export const getTeams = async (req, res) => {
-try {
-  let teams;
-  const userId = req.session?.user?.id;
-  const domain = req.query.domain;
-  const isSuperAdmin = req.session?.user?.role === "super_admin";
-  if (isSuperAdmin) {
-    teams = await Team.findAll({ include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
-  ] });
-  } else if (userId) {
-    teams = await Team.findAll({
-      where: {userId},
-      include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
-  ]
-    });
-  } else if (domain) {
-    const user = await User.findOne({ where: {domain}})
-    if (!user) {
-      return res.status(404).json({ message: "No Teams found for this domain" });
+  try {
+    let teams;
+    const userId = req.session?.user?.id;
+    const domain = req.query.domain;
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
+    const includeOptions = [
+      { model: League, as: "league" },
+      { model: Player, as: "players" },
+      {
+        model: Game,
+        as: "homeGames",
+        attributes: [
+          "id",
+          "date",
+          "status",
+          "score_team1",
+          "score_team2",
+          "team1_id",
+          "team2_id",
+        ],
+        include: [
+          { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+          { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+        ],
+      },
+      {
+        model: Game,
+        as: "awayGames",
+        attributes: [
+          "id",
+          "date",
+          "status",
+          "score_team1",
+          "score_team2",
+          "team1_id",
+          "team2_id",
+        ],
+        include: [
+          { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+          { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+        ],
+      },
+    ];
+    if (isSuperAdmin) {
+      teams = await Team.findAll({ include: includeOptions });
+    } else if (userId) {
+      teams = await Team.findAll({ where: { userId }, include: includeOptions });
+    } else if (domain) {
+      const user = await User.findOne({ where: { domain } });
+      if (!user) {
+        return res.status(404).json({ message: "No Teams found for this domain" });
+      }
+      teams = await Team.findAll({ where: { userId: user.id }, include: includeOptions });
+    } else {
+      return res.status(403).json({ message: "Unauthorized or no teams available" });
     }
-    teams = await Team.findAll({ 
-      where: { userId: user.id },
-      include: [
-    { model: League, as: 'league' },  // ✅ Now it correctly fetches the league
-    { model: Player, as: 'players' },  // ✅ Now it correctly fetches players
-  ]
+    // Process each team to dynamically calculate wins, losses, and ties
+    const processedTeams = teams.map((team) => {
+      const games = [...team.homeGames, ...team.awayGames].map((game) => ({
+        id: game.id,
+        date: game.date,
+        status: game.status,
+        score_team1: game.score_team1,
+        score_team2: game.score_team2,
+        team1: game.homeTeam ? game.homeTeam.name : "Unknown",
+        team2: game.awayTeam ? game.awayTeam.name : "Unknown",
+      }));
+      let wins = 0, losses = 0, ties = 0;
+      games.forEach((game) => {
+        if (game.status === "completed") {
+          if (game.team1 === team.name && game.score_team1 > game.score_team2) wins++;
+          else if (game.team2 === team.name && game.score_team2 > game.score_team1) wins++;
+          else if (game.score_team1 === game.score_team2) ties++;
+          else losses++;
+        }
+      });
+
+      return {
+        id: team.id,
+        name: team.name,
+        league: team.league,
+        players: team.players,
+        wins, // ✅ Dynamically calculated
+        losses, // ✅ Dynamically calculated
+        ties, // ✅ Dynamically calculated
+      };
     });
-  } else {
-    return res.status(403).json({ message: "Unauthorized or no teams available" });
+    res.status(200).json({
+      message: processedTeams.length ? "Teams fetched successfully" : "No teams found",
+      teams: processedTeams,
+    });
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    res.status(500).json({ message: "Failed to fetch teams" });
   }
-  res.status(200).json({
-    message: teams.length ? "Teams fetched successfully" : "No teams found",
-    teams
-  });
-} catch (error) {
-  console.error("Error fetching teams:", error);
-  res.status(505).json({ message: "Failed to fetch teams" });
-}
 };
+
 
 
 // Get Team By ID
@@ -88,59 +143,95 @@ export const getTeamById = async (req, res) => {
     const isSuperAdmin = req.session?.user?.role === "super_admin";
 
     let team;
-
     const includeOptions = [
-      { model: League, as: 'league' },
-      { model: Player, as: 'players' },
+      { model: League, as: "league" },
+      { model: Player, as: "players" },
       {
         model: Game,
-        as: 'homeGames',
-        attributes: ['id', 'date', 'status', 'score_team1', 'score_team2', 'team1_id', 'team2_id'],
+        as: "homeGames",
+        attributes: [
+          "id",
+          "date",
+          "status",
+          "score_team1",
+          "score_team2",
+          "team1_id",
+          "team2_id",
+        ],
         include: [
-          { model: Team, as: 'homeTeam', attributes: ['id', 'name'] },
-          { model: Team, as: 'awayTeam', attributes: ['id', 'name'] }
-        ]
+          { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+          { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+        ],
       },
       {
         model: Game,
-        as: 'awayGames',
-        attributes: ['id', 'date', 'status', 'score_team1', 'score_team2', 'team1_id', 'team2_id'],
+        as: "awayGames",
+        attributes: [
+          "id",
+          "date",
+          "status",
+          "score_team1",
+          "score_team2",
+          "team1_id",
+          "team2_id",
+        ],
         include: [
-          { model: Team, as: 'homeTeam', attributes: ['id', 'name'] },
-          { model: Team, as: 'awayTeam', attributes: ['id', 'name'] }
-        ]
-      }
+          { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+          { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+        ],
+      },
     ];
-
     if (isSuperAdmin) {
       team = await Team.findByPk(id, { include: includeOptions });
     } else if (userId) {
-      team = await Team.findOne({ where: { id, userId }, include: includeOptions });
+      team = await Team.findOne({
+        where: { id, userId },
+        include: includeOptions,
+      });
     } else if (domain) {
       const user = await User.findOne({ where: { domain } });
       if (!user) {
-        return res.status(404).json({ message: "No teams found for this domain" });
+        return res
+          .status(404)
+          .json({ message: "No teams found for this domain" });
       }
-      team = await Team.findOne({ where: { id, userId: user.id }, include: includeOptions });
+      team = await Team.findOne({
+        where: { id, userId: user.id },
+        include: includeOptions,
+      });
     } else {
       return res.status(403).json({ message: "Unauthorized" });
     }
-
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
-
     // Merge home and away games into one `games` array
-    const games = [...team.homeGames, ...team.awayGames].map(game => ({
+    const games = [...team.homeGames, ...team.awayGames].map((game) => ({
       id: game.id,
       date: game.date,
       status: game.status,
       score_team1: game.score_team1,
       score_team2: game.score_team2,
-      team1: game.homeTeam ? game.homeTeam.name : 'Unknown',
-      team2: game.awayTeam ? game.awayTeam.name : 'Unknown'
+      team1: game.homeTeam ? game.homeTeam.name : "Unknown",
+      team2: game.awayTeam ? game.awayTeam.name : "Unknown",
     }));
-
+    // Calculate wins, losses, and ties dynamically
+    let wins = 0,
+      losses = 0,
+      ties = 0;
+    games.forEach((game) => {
+      if (game.status === "completed") {
+        if (game.team1 === team.name && game.score_team1 > game.score_team2)
+          wins++;
+        else if (
+          game.team2 === team.name &&
+          game.score_team2 > game.score_team1
+        )
+          wins++;
+        else if (game.score_team1 === game.score_team2) ties++;
+        else losses++;
+      }
+    });
     // Return only necessary data
     res.status(200).json({
       message: "Team fetched successfully",
@@ -149,15 +240,18 @@ export const getTeamById = async (req, res) => {
         name: team.name,
         league: team.league,
         players: team.players,
-        games
-      }
+        wins, // ✅ Dynamically calculated
+        losses, // ✅ Dynamically calculated
+        ties, // ✅ Dynamically calculated
+        games,
+      },
     });
-
   } catch (error) {
     console.error("Error fetching teams:", error);
     res.status(500).json({ message: "Failed to fetch teams" });
   }
 };
+
 
 
 export const updateTeam = async (req, res) => {

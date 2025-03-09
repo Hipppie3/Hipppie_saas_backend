@@ -95,12 +95,13 @@ export const getLeagueById = async (req, res) => {
           { 
             model: Team, 
             as: 'teams',
-            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+            attributes: ['id', 'name', 'leagueId', 'wins', 'losses'], // ✅ Exclude stored wins/losses
           },  
           {
             model: Game,
-            as: 'games',  // This should return all games associated with the league
-            required: false, // Make sure this doesn't limit the query to just one game
+            as: 'games',
+            required: false,
+            attributes: ['id', 'team1_id', 'team2_id', 'score_team1', 'score_team2', 'status', 'date'],
           }
         ]
       });
@@ -111,12 +112,13 @@ export const getLeagueById = async (req, res) => {
           { 
             model: Team, 
             as: 'teams',
-            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+            attributes: ['id', 'name', 'leagueId', 'wins', 'losses'], // ✅ Exclude stored wins/losses
           },
           {
             model: Game,
-            as: 'games', // This should return all games associated with the league
+            as: 'games',
             required: false,
+            attributes: ['id', 'team1_id', 'team2_id', 'score_team1', 'score_team2', 'status', 'date'],
           }
         ]
       });
@@ -131,12 +133,13 @@ export const getLeagueById = async (req, res) => {
           { 
             model: Team, 
             as: 'teams',
-            include: [{ model: Player, as: 'players' }] // ✅ Include players inside teams
+            attributes: ['id', 'name', 'leagueId', 'wins', 'losses'], // ✅ Exclude stored wins/losses
           },
           {
             model: Game,
-            as: 'games',  // This should return all games associated with the league
+            as: 'games',
             required: false,
+            attributes: ['id', 'team1_id', 'team2_id', 'score_team1', 'score_team2', 'status', 'date'],
           }
         ]
       });
@@ -148,12 +151,34 @@ export const getLeagueById = async (req, res) => {
       return res.status(404).json({ message: "League not found" });
     }
 
+    // ✅ Recalculate wins and losses
+    const teamsMap = {};
+    league.teams.forEach(team => {
+      teamsMap[team.id] = { id: team.id, name: team.name, leagueId: team.leagueId, wins: 0, losses: 0 };
+    });
+
+    league.games.forEach(game => {
+      if (game.status === "completed") {
+        if (game.score_team1 > game.score_team2) {
+          teamsMap[game.team1_id].wins++;
+          teamsMap[game.team2_id].losses++;
+        } else if (game.score_team2 > game.score_team1) {
+          teamsMap[game.team2_id].wins++;
+          teamsMap[game.team1_id].losses++;
+        }
+      }
+    });
+
+    // ✅ Replace teams array with recalculated data
+    league.teams = Object.values(teamsMap);
+
     res.status(200).json({ message: "League fetched successfully", league });
   } catch (error) {
     console.error("Error fetching league:", error);
     res.status(500).json({ message: "Failed to fetch league" });
   }
 };
+
 
 
 

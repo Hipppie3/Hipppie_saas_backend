@@ -32,7 +32,12 @@ export const createGame = async (req, res) => {
 export const getGames = async (req, res) => {
   console.log('fetching games')
   try {
-    const games = await Game.findAll();
+    const games = await Game.findAll({
+      include: [
+    { model: Team, as: "homeTeam", attributes: ["id", "name"] }, // ✅ Include team name
+    { model: Team, as: "awayTeam", attributes: ["id", "name"] }  // ✅ Include team name
+      ]
+    });
     res.status(200).json(games);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -103,10 +108,55 @@ export const updateGameScores = async (req, res) => {
     game.status = "completed"; // Auto-update status
     await game.save();
 
+    // ✅ Recalculate wins/losses for both teams
+    await recalculateTeamRecords(game.team1_id);
+    await recalculateTeamRecords(game.team2_id);
+
     res.status(200).json(game);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+// ✅ Function to Recalculate Team Wins/Losses
+const recalculateTeamRecords = async (teamId) => {
+  const team = await Team.findByPk(teamId, {
+    include: [
+      {
+        model: Game,
+        as: "homeGames",
+        where: { status: "completed" },
+        required: false,
+      },
+      {
+        model: Game,
+        as: "awayGames",
+        where: { status: "completed" },
+        required: false,
+      },
+    ],
+  });
+
+  if (!team) return;
+
+  let wins = 0, losses = 0, ties = 0;
+
+  // ✅ Count wins/losses/ties from completed home games
+  team.homeGames.forEach((game) => {
+    if (game.score_team1 > game.score_team2) wins++;
+    else if (game.score_team1 < game.score_team2) losses++;
+    else ties++;
+  });
+
+  // ✅ Count wins/losses/ties from completed away games
+  team.awayGames.forEach((game) => {
+    if (game.score_team2 > game.score_team1) wins++;
+    else if (game.score_team2 < game.score_team1) losses++;
+    else ties++;
+  });
+
+  // ✅ Update the team's wins/losses
+  await team.update({ wins, losses, ties });
 };
 
 
