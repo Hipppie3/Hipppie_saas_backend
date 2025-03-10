@@ -93,20 +93,45 @@ export const logoutUser = async (req, res) => {
 };
 
 // Check Authentication
-export const checkAuth = (req, res) => {
-  console.log("Checking session:", req.session.user); 
-  if (req.session.user) {
-    return res.json({ 
-      authenticated: true, 
-      user: { 
-        id: req.session.user.id, 
-        username: req.session.user.username, 
-        role: req.session.user.role, 
-        domain: req.session.user.domain, 
+export const checkAuth = async (req, res) => {
+  console.log("Checking session:", req.session.user);
+  if (!req.session.user) {
+    return res.json({ authenticated: false, user: null });
+  }
+
+  try {
+    // Fetch user along with their sports (through the user_sports join table)
+    const user = await User.findOne({
+      where: { id: req.session.user.id },
+      include: [
+        {
+          model: Sport,
+          as: 'sports', // Alias from associations
+          attributes: ['id', 'name'],
+          through: { attributes: [] }, // Exclude extra join table fields
+        }
+      ]
+    });
+
+    if (!user) {
+      return res.json({ authenticated: false, user: null });
+    }
+
+    return res.json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        domain: user.domain,
+        sports: user.sports, // Now includes an array of the user's sports
       }
     });
+
+  } catch (error) {
+    console.error("Error checking auth:", error);
+    res.status(500).json({ authenticated: false, message: "Internal server error" });
   }
-  res.json({ authenticated: false, user: null });
 };
 
 // Update User

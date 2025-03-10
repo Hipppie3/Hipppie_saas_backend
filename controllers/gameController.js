@@ -77,7 +77,8 @@ export const getGameById = async (req, res) => {
     // Get the first associated sportId
     const sportId = user.sports[0].id;
     // Get all stats for the found sportId
-    const stats = await Stat.findAll({ where: { sportId } });
+    const stats = await Stat.findAll({ where: { sportId, userId: game.userId } });
+
 
     // Fetch player stats for this game
     const playerStats = await PlayerGameStat.findAll({
