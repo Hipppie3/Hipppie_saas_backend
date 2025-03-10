@@ -12,6 +12,7 @@ export const createGame = async (req, res) => {
     if (team1_id === team2_id) {
       return res.status(400).json({ error: "Teams must be different" });
     }
+    
     const newGame = await Game.create({
       userId: req.user.id,
       leagueId,
@@ -30,19 +31,69 @@ export const createGame = async (req, res) => {
 
 // ✅ Get all games
 export const getGames = async (req, res) => {
-  console.log('fetching games')
+  console.log("Fetching games");
+
   try {
-    const games = await Game.findAll({
-      include: [
-    { model: Team, as: "homeTeam", attributes: ["id", "name"] }, // ✅ Include team name
-    { model: Team, as: "awayTeam", attributes: ["id", "name"] }  // ✅ Include team name
-      ]
+    let games;
+    const userId = req.session?.user?.id; // Check user session
+    const domain = req.query.domain; // Get domain from request
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
+
+    const includeOptions = [
+      { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+      { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+    ];
+
+    if (isSuperAdmin) {
+      // ✅ Super Admin: Get all games
+      games = await Game.findAll({ include: includeOptions });
+
+    } else if (userId) {
+      // ✅ Authenticated User: Fetch games from leagues they are part of
+      const user = await User.findByPk(userId, {
+        include: [{ model: League, as: "leagues", attributes: ["id"] }],
+      });
+
+      if (!user || !user.leagues.length) {
+        return res.status(400).json({ error: "User has no associated leagues" });
+      }
+
+      const leagueIds = user.leagues.map((league) => league.id);
+
+      games = await Game.findAll({
+        where: { leagueId: leagueIds },
+        include: includeOptions,
+        order: [["date", "ASC"]],
+      });
+
+    } else if (domain) {
+      // ✅ Public User: Fetch games for the provided domain
+      const league = await League.findOne({ where: { domain } });
+
+      if (!league) {
+        return res.status(404).json({ message: "No games found for this domain" });
+      }
+
+      games = await Game.findAll({
+        where: { leagueId: league.id },
+        include: includeOptions,
+        order: [["date", "ASC"]],
+      });
+
+    } else {
+      return res.status(403).json({ message: "Unauthorized or no games available" });
+    }
+
+    res.status(200).json({
+      message: games.length ? "Games fetched successfully" : "No games found",
+      games,
     });
-    res.status(200).json(games);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error fetching games:", error);
+    res.status(500).json({ message: "Failed to fetch games" });
   }
 };
+
 
 // Get a single game by ID
 export const getGameById = async (req, res) => {

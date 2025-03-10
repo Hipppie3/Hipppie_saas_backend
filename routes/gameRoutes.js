@@ -9,7 +9,7 @@ router.get('/', getGames);
 router.post('/generate-schedule', generateLeagueSchedule);
 router.get('/league/:leagueId', getGamesByLeague)
 router.get('/:id', getGameById);
-router.put('/:id/scores', updateGameScores);
-router.delete('/:id', deleteGame);
+router.put('/:id/scores', authenticateSession, updateGameScores);
+router.delete('/:id', authenticateSession, deleteGame);
 
 export default router;

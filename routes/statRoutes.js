@@ -7,6 +7,7 @@ import {
   resetStats,
   reorderStats
 } from '../controllers/statController.js';
+import { authenticateSession } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,17 +15,17 @@ const router = express.Router();
 router.get('/:sportId', getStatsBySport);
 
 // Create a new stat
-router.post('/', createStat);
+router.post('/', authenticateSession, createStat);
 
 // Reset stat
-router.post('/reset', resetStats)
-router.put('/reorder', reorderStats);
+router.post('/reset', authenticateSession, resetStats)
+router.put('/reorder', authenticateSession, reorderStats);
 
 // Update a stat
-router.put('/:id', updateStat);
+router.put('/:id', authenticateSession, updateStat);
 
 // Delete a stat
-router.delete('/:id', deleteStat);
+router.delete('/:id', authenticateSession, deleteStat);
 
 
 
