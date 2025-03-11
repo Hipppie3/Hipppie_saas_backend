@@ -8,7 +8,15 @@ import Sport from './sport.js';
 import Stat from './stat.js';
 import Game from './game.js';
 import PlayerGameStat from './playerGameStat.js';
+import GamePeriod from './gamePeriod.js';
 
+// ✅ Game <--> GamePeriod Association
+Game.hasMany(GamePeriod, { foreignKey: 'gameId', as: 'periods' });
+GamePeriod.belongsTo(Game, { foreignKey: 'gameId', as: 'game' });
+Sport.hasMany(GamePeriod, { foreignKey: 'sportId', as: 'periods' })
+GamePeriod.belongsTo(Sport, { foreignKey: 'sportId', as: 'sport' });
+User.hasMany(GamePeriod, { foreignKey: 'userId', as: 'periods' });
+GamePeriod.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 Player.hasMany(PlayerGameStat, { foreignKey: 'player_id', as: 'gameStats' });
 PlayerGameStat.belongsTo(Player, { foreignKey: 'player_id', as: 'player' });
@@ -59,4 +67,4 @@ Team.hasMany(Game, { foreignKey: 'team2_id', as: 'awayGames' });
 Game.belongsTo(Team, { foreignKey: 'team2_id', as: 'awayTeam' });
 
 // ✅ Export models with explicit associations
-export { sequelize, User, League, Team, Player, Sport, Stat, Game, PlayerGameStat };
+export { sequelize, User, League, Team, Player, Sport, Stat, Game, PlayerGameStat, GamePeriod };

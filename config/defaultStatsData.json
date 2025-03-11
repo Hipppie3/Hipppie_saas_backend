@@ -1,0 +1,37 @@
+{
+  "Basketball": [
+    { "name": "Points", "shortName": "PTS" },
+    { "name": "Assists", "shortName": "AST" },
+    { "name": "Rebounds", "shortName": "REB" },
+    { "name": "Steals", "shortName": "STL" },
+    { "name": "Blocks", "shortName": "BLK" },
+    { "name": "Turnovers", "shortName": "TO" },
+    { "name": "Field Goals Made", "shortName": "FGM" },
+    { "name": "Field Goals Attempted", "shortName": "FGA" },
+    { "name": "Free Throws Made", "shortName": "FTM" },
+    { "name": "Free Throws Attempted", "shortName": "FTA" },
+    { "name": "Three-Pointers Made", "shortName": "3PM" },
+    { "name": "Three-Pointers Attempted", "shortName": "3PA" }
+  ],
+  "Volleyball": [
+    { "name": "Kills", "shortName": "K" },
+    { "name": "Assists", "shortName": "AST" },
+    { "name": "Digs", "shortName": "DIG" },
+    { "name": "Blocks", "shortName": "BLK" },
+    { "name": "Service Aces", "shortName": "ACE" },
+    { "name": "Errors", "shortName": "ERR" },
+    { "name": "Total Attacks", "shortName": "ATT" }
+  ],
+"Baseball": [
+  { "name": "Hits", "shortName": "H" },
+  { "name": "Runs", "shortName": "R" },
+  { "name": "Runs Batted In", "shortName": "RBI" },
+  { "name": "Home Runs", "shortName": "HR" },
+  { "name": "Batting Average", "shortName": "AVG" },
+  { "name": "Strikeouts", "shortName": "K" },
+  { "name": "Walks", "shortName": "BB" },
+  { "name": "Stolen Bases", "shortName": "SB" },
+  { "name": "Earned Run Average", "shortName": "ERA" },
+  { "name": "Innings Pitched", "shortName": "IP" }
+]
+}

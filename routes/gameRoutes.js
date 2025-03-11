@@ -4,8 +4,8 @@ import { authenticateSession } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/', authenticateSession, createGame);
 router.get('/', getGames);
+router.post('/', authenticateSession, createGame);
 router.post('/generate-schedule', generateLeagueSchedule);
 router.get('/league/:leagueId', getGamesByLeague)
 router.get('/:id', getGameById);

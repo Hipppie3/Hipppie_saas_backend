@@ -1,6 +1,19 @@
 import { Sport, Stat } from '../models/index.js';
+import { promises as fs } from "fs";
+import path from "path";
 
-
+// Function to get default stats from JSON
+const defaultStatsData = async (sportName) => {
+  try {
+    const filePath = path.resolve("config/defaultStatsData.json");
+    const data = await fs.readFile(filePath, "utf-8");
+    const defaultStats = JSON.parse(data);
+    return defaultStats[sportName] || [];
+  } catch (error) {
+    console.error("Error reading default stats JSON:", error);
+    return [];
+  }
+};
 
 // Get stats by sport ID
 export const getStatsBySport = async (req, res) => {
@@ -18,20 +31,11 @@ export const getStatsBySport = async (req, res) => {
     });
 
     if (stats.length === 0) {
-      const defaultStats = [
-        { name: "Points", shortName: "PTS" },
-        { name: "Assists", shortName: "AST" },
-        { name: "Rebounds", shortName: "REB" },
-        { name: "Steals", shortName: "STL" },
-        { name: "Blocks", shortName: "BLK" },
-        { name: "Turnovers", shortName: "TO" },
-        { name: "Field Goals Made", shortName: "FGM" },
-        { name: "Field Goals Attempted", shortName: "FGA" },
-        { name: "Free Throws Made", shortName: "FTM" },
-        { name: "Free Throws Attempted", shortName: "FTA" },
-        { name: "Three-Pointers Made", shortName: "3PM" },
-        { name: "Three-Pointers Attempted", shortName: "3PA" },
-      ];
+      const sport = await Sport.findByPk(sportId);
+      if (!sport) return res.status(404).json({ message: "Sport not found" });
+
+      // ✅ Get default stats from JSON (Fix: Await the function)
+      const defaultStats = await defaultStatsData(sport.name);
 
       await Stat.bulkCreate(
         defaultStats.map((stat, index) => ({
@@ -52,6 +56,7 @@ export const getStatsBySport = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
@@ -135,37 +140,10 @@ export const resetStats = async (req, res) => {
     // ✅ Delete only this user's stats
     await Stat.destroy({ where: { sportId, userId } });
 
-    // ✅ Set default stats manually (instead of pulling from global DB)
-    let defaultStats = [];
+    // ✅ Get default stats from JSON (Fix: Await the function)
+    const defaultStats = await defaultStatsData(sport.name);
 
-    if (sport.name === "Basketball") {
-      defaultStats = [
-        { name: "Points", shortName: "PTS" },
-        { name: "Assists", shortName: "AST" },
-        { name: "Rebounds", shortName: "REB" },
-        { name: "Steals", shortName: "STL" },
-        { name: "Blocks", shortName: "BLK" },
-        { name: "Turnovers", shortName: "TO" },
-        { name: "Field Goals Made", shortName: "FGM" },
-        { name: "Field Goals Attempted", shortName: "FGA" },
-        { name: "Free Throws Made", shortName: "FTM" },
-        { name: "Free Throws Attempted", shortName: "FTA" },
-        { name: "Three-Pointers Made", shortName: "3PM" },
-        { name: "Three-Pointers Attempted", shortName: "3PA" }
-      ];
-    } else if (sport.name === "Volleyball") {
-      defaultStats = [
-        { name: "Kills", shortName: "K" },
-        { name: "Assists", shortName: "AST" },
-        { name: "Digs", shortName: "DIG" },
-        { name: "Blocks", shortName: "BLK" },
-        { name: "Service Aces", shortName: "ACE" },
-        { name: "Errors", shortName: "ERR" },
-        { name: "Total Attacks", shortName: "ATT" }
-      ];
-    }
-
-    // ✅ Ensure unique stats (Prevent duplication)
+    // ✅ Insert unique stats
     for (const stat of defaultStats) {
       const existingStat = await Stat.findOne({
         where: { sportId, userId, name: stat.name }
@@ -187,6 +165,7 @@ export const resetStats = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 export const reorderStats = async (req, res) => {

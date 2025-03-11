@@ -1,0 +1,28 @@
+{
+  "Basketball": [
+    { "name": "1st Quarter", "number": 1 },
+    { "name": "2nd Quarter", "number": 2 },
+    { "name": "3rd Quarter", "number": 3 },
+    { "name": "4th Quarter", "number": 4 },
+    { "name": "Overtime", "number": 5 }
+  ],
+  "Volleyball": [
+    { "name": "Set 1", "number": 1 },
+    { "name": "Set 2", "number": 2 },
+    { "name": "Set 3", "number": 3 },
+    { "name": "Set 4", "number": 4 },
+    { "name": "Set 5", "number": 5 }
+  ],
+  "Baseball": [
+    { "name": "1st Inning", "number": 1 },
+    { "name": "2nd Inning", "number": 2 },
+    { "name": "3rd Inning", "number": 3 },
+    { "name": "4th Inning", "number": 4 },
+    { "name": "5th Inning", "number": 5 },
+    { "name": "6th Inning", "number": 6 },
+    { "name": "7th Inning", "number": 7 },
+    { "name": "8th Inning", "number": 8 },
+    { "name": "9th Inning", "number": 9 },
+    { "name": "Extra Innings", "number": 10 }
+  ]
+}

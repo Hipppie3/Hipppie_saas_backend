@@ -1,4 +1,4 @@
-import { League, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js'
+import { League, Sport, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js'
 
 // Create Player with Image Upload
 export const createPlayer = async (req, res) => {
@@ -144,7 +144,7 @@ export const getPlayerById = async (req, res) => {
             {
               model: Game,
               as: "game",
-              attributes: ["id", "date"], // ✅ Fetch game date only
+              attributes: ["id", "date"],
               include: [
                 { model: Team, as: "homeTeam", attributes: ["id", "name"] },
                 { model: Team, as: "awayTeam", attributes: ["id", "name"] },
@@ -154,16 +154,34 @@ export const getPlayerById = async (req, res) => {
         },
       ],
     });
+
     if (!player) return res.status(404).json({ message: "Player not found" });
+
+    // ✅ Fetch userId from player
+    const user = await User.findByPk(player.userId, {
+      include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
+    });
+
+    if (!user || !user.sports.length) {
+      return res.status(400).json({ message: "Sport ID could not be determined for this player" });
+    }
+
+    // ✅ Extract sportId
+    const sportId = user.sports[0].id;
+
+    // ✅ Fetch all stats for the determined sportId
+    const allStats = await Stat.findAll({
+      where: { sportId, userId: player.userId }
+    });
+    console.log(allStats)
+    // ✅ Merge gameStats with allStats to ensure missing stats are set to 0
+    const playerStats = await PlayerGameStat.findAll({
+      where: { player_id: id},
+      include: [{ model: Stat, as: "stat"}]
+    })
+
     res.status(200).json({
-      message: "Player fetched successfully",
-      player: {
-        ...player.toJSON(),
-        image: player.image
-          ? `data:image/jpeg;base64,${player.image.toString("base64")}` // ✅ Keep image data
-          : null,
-        imageAvailable: !!player.image, // ✅ Also indicate if an image exists
-      },
+      player, allStats, playerStats
     });
   } catch (error) {
     console.error("Error fetching player:", error);
