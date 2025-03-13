@@ -2,32 +2,38 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('game_periods', {
+    await queryInterface.createTable('game_period_scores', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
       },
-      userId: {
+      gamePeriodId: {
         type: Sequelize.INTEGER,
-        references: { model: 'users', key: 'id' },
+        references: {
+          model: 'game_periods',
+          key: 'id',
+        },
         onDelete: 'CASCADE',
         allowNull: false,
       },
-      sportId: {
+      gameId: {
         type: Sequelize.INTEGER,
-        references: { model: 'sports', key: 'id' },
+        references: {
+          model: 'games',
+          key: 'id',
+        },
         onDelete: 'CASCADE',
         allowNull: false,
       },
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false,
+      period_score_team1: {
+        type: Sequelize.INTEGER,
+        allowNull: true, // Score for team 1 in this game period
       },
-      hidden: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false, // Periods are visible by default
+      period_score_team2: {
+        type: Sequelize.INTEGER,
+        allowNull: true, // Score for team 2 in this game period
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -43,6 +49,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('game_periods');
+    await queryInterface.dropTable('game_period_scores');
   }
 };

@@ -1,20 +1,20 @@
-import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod} from '../models/index.js';
+import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore } from '../models/index.js';
 
 
 
 // ✅ Create a new game
 export const createGame = async (req, res) => {
-  console.log('yes')
-
-    const {leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
   try {
+    const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No user session' });
     }
     if (team1_id === team2_id) {
       return res.status(400).json({ error: "Teams must be different" });
     }
-    
+
+    // ✅ Step 1: Create the Game
     const newGame = await Game.create({
       userId: req.user.id,
       leagueId,
@@ -25,12 +25,17 @@ export const createGame = async (req, res) => {
       score_team1: score_team1 || 0,
       score_team2: score_team2 || 0,
     });
+
+    // ✅ Step 2: Find Sport for the League
+    const sport = await Sport.findOne({ where: { id: leagueId } });
+    if (!sport) return res.status(400).json({ message: "Sport not found" });
+
     res.status(201).json(newGame);
   } catch (error) {
+    console.error("Error creating game:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
 
 
 // ✅ Get all games
@@ -112,7 +117,8 @@ export const getGames = async (req, res) => {
 export const getGameById = async (req, res) => {
   try {
     const { id } = req.params;
-    // Fetch the game with teams and players
+
+    // ✅ Fetch the game with teams and players
     const game = await Game.findByPk(id, {
       include: [
         {
@@ -126,34 +132,88 @@ export const getGameById = async (req, res) => {
           include: [{ model: Player, as: "players" }],
         },
         {
-          model: GamePeriod,
-          as: "periods",
+          model: GamePeriodScore,
+          as: "periodScores",
+          include: [{ model: GamePeriod, as: "gamePeriod" }],
         },
       ],
     });
+
     if (!game) return res.status(404).json({ error: "Game not found" });
-    console.log("Fetched game:", game);
-    // Fetch the user and include sports through the join table
+
+    // ✅ Fetch the user and their associated sports
     const user = await User.findByPk(game.userId, {
       include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
     });
-    console.log("Fetched user:", user);
-    console.log("User sports:", user?.sports || []);
+
     if (!user || !user.sports.length) {
       return res.status(400).json({ error: "User has no associated sport" });
     }
-    // Get the first associated sportId
+
+    // ✅ Get sportId from the user's first sport
     const sportId = user.sports[0].id;
-    // Get all stats for the found sportId
-    const stats = await Stat.findAll({ where: { sportId, userId: game.userId } });
 
+    // ✅ Check if the game already has periodScores
+    const existingScores = await GamePeriodScore.findAll({ where: { gameId: id } });
 
-    // Fetch player stats for this game
+    if (existingScores.length === 0) {
+      console.log(`No GamePeriodScores found for game ${id}. Assigning now...`);
+
+      // ✅ Fetch all GamePeriods for this sport & user
+      const gamePeriods = await GamePeriod.findAll({
+        where: { sportId, userId: game.userId },
+      });
+
+      if (gamePeriods.length > 0) {
+        // ✅ Assign GamePeriods to the game
+        await Promise.all(
+          gamePeriods.map((period) =>
+            GamePeriodScore.create({
+              gameId: id,
+              gamePeriodId: period.id,
+              period_score_team1: 0,
+              period_score_team2: 0,
+            })
+          )
+        );
+
+        console.log(`GamePeriods assigned to game ${id}`);
+      } else {
+        console.warn(`No game periods found for sportId: ${sportId}`);
+      }
+    }
+
+    // ✅ Fetch player stats for this game
     const playerStats = await PlayerGameStat.findAll({
       where: { game_id: id },
       include: [{ model: Stat, as: "stat" }],
     });
-    res.status(200).json({ game, stats, playerStats });
+
+    // ✅ Fetch all stats for this sport and user
+    const stats = await Stat.findAll({ where: { sportId, userId: game.userId } });
+
+    // ✅ Refetch game to include newly added GamePeriodScores
+    const updatedGame = await Game.findByPk(id, {
+      include: [
+        {
+          model: Team,
+          as: "homeTeam",
+          include: [{ model: Player, as: "players" }],
+        },
+        {
+          model: Team,
+          as: "awayTeam",
+          include: [{ model: Player, as: "players" }],
+        },
+        {
+          model: GamePeriodScore,
+          as: "periodScores",
+          include: [{ model: GamePeriod, as: "gamePeriod" }],
+        },
+      ],
+    });
+
+    res.status(200).json({ game: updatedGame, stats, playerStats });
   } catch (error) {
     console.error("Error fetching game:", error);
     res.status(500).json({ error: error.message });

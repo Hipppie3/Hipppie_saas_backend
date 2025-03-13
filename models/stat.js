@@ -38,6 +38,7 @@ const Stat = sequelize.define("stat", {
     allowNull: false,
     defaultValue: 0, // ✅ Default order for sorting
   },
+    hidden: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, 
 }, {
   timestamps: true,
 });

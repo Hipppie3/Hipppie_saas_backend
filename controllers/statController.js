@@ -25,29 +25,33 @@ export const getStatsBySport = async (req, res) => {
       return res.status(400).json({ message: "Sport ID and User ID are required" });
     }
 
-    let stats = await Stat.findAll({ 
+    // ✅ Fetch stats in correct order
+    let stats = await Stat.findAll({
       where: { sportId, userId },
-      order: [["order", "ASC"]] // ✅ Fetch stats in correct order
+      order: [["order", "ASC"]]
     });
 
     if (stats.length === 0) {
       const sport = await Sport.findByPk(sportId);
       if (!sport) return res.status(404).json({ message: "Sport not found" });
 
-      // ✅ Get default stats from JSON (Fix: Await the function)
+      // ✅ Get default stats from JSON
       const defaultStats = await defaultStatsData(sport.name);
 
-      await Stat.bulkCreate(
+      // ✅ Bulk insert default stats with correct order
+      const createdStats = await Stat.bulkCreate(
         defaultStats.map((stat, index) => ({
           sportId,
           userId,
           name: stat.name,
           shortName: stat.shortName,
-          order: index, // ✅ Set initial order
-        }))
+          order: index,
+          hidden: false, // Ensure all new stats are visible
+        })),
+        { returning: true } // ✅ Ensure newly created stats are returned
       );
 
-      stats = await Stat.findAll({ where: { sportId, userId }, order: [["order", "ASC"]] });
+      stats = createdStats; // ✅ Set the newly inserted stats
     }
 
     res.json(stats);
@@ -182,6 +186,30 @@ export const reorderStats = async (req, res) => {
     res.json({ message: "Stats reordered successfully" });
   } catch (error) {
     console.error("Error reordering stats:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// Hide/unhide a stat
+export const toggleStatVisibility = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { hidden } = req.body; // Expecting the 'hidden' flag
+
+    const userId = req.session.user.id;
+    const stat = await Stat.findOne({ where: { id, userId } });
+
+    if (!stat) {
+      return res.status(404).json({ message: "Stat not found or not owned by the user" });
+    }
+
+    // Update the `hidden` status in the database
+    await stat.update({ hidden });
+
+    res.json({ message: `Stat visibility updated`, stat });
+  } catch (error) {
+    console.error("Error hiding stat:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

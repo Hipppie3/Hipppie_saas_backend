@@ -5,7 +5,8 @@ import {
   updateStat, 
   deleteStat,
   resetStats,
-  reorderStats
+  reorderStats,
+  toggleStatVisibility
 } from '../controllers/statController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 
@@ -16,6 +17,8 @@ router.get('/:sportId', getStatsBySport);
 
 // Create a new stat
 router.post('/', authenticateSession, createStat);
+// Add the toggle visibility route
+router.put('/:id/toggle-visibility', authenticateSession, toggleStatVisibility);
 
 // Reset stat
 router.post('/reset', authenticateSession, resetStats)
