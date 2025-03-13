@@ -1,4 +1,4 @@
-import { GamePeriod, Sport, Game, GamePeriodScore } from "../models/index.js";
+import { GamePeriod, Sport, Game, GamePeriodScore, Stat } from "../models/index.js";
 import { promises as fs } from "fs";
 import path from "path";
 
