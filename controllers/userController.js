@@ -1,5 +1,5 @@
 import { User, Sport } from '../models/index.js'
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
 // Register User
