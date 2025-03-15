@@ -63,3 +63,7 @@ app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${POR
 app.get('/api/test', (req, res) => {
   res.json({ message: "Backend is working!" });
 });
+
+app.get('/health-check', (req, res) => {
+  res.json({ message: 'Server is up and running!' });
+});
