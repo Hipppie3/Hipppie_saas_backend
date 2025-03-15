@@ -1,5 +1,8 @@
+import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
-import 'dotenv/config';
+
+// Explicitly load .env from the project root
+dotenv.config({ path: '../.env' });
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
