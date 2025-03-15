@@ -1,24 +1,23 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config({ path: '../.env' });
 
-// Forcefully append ?sslmode=require to DATABASE_URL if it's not there
-const dbUrl = process.env.DATABASE_URL.includes('?sslmode=require')
-  ? process.env.DATABASE_URL
-  : `${process.env.DATABASE_URL}?sslmode=require`;
+// Ensure the RDS CA Certificate is available
+const sslOptions = {
+  require: true,
+  rejectUnauthorized: true, // Now verifying the self-signed cert
+  ca: fs.readFileSync('rds-ca.pem').toString(), // Load the AWS certificate
+};
 
-console.log("🔍 Using DATABASE_URL:", dbUrl);
-
-const sequelize = new Sequelize(dbUrl, {
+// Force SSL to be used with the certificate
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false, // AWS RDS SSL fix
-    },
+    ssl: sslOptions,
   },
 });
 
