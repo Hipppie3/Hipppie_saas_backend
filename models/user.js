@@ -32,7 +32,10 @@ const User = sequelize.define('user', {
     unique: true,
   },
 }, {
-  timestamps: true, // Adds createdAt and updatedAt automatically
+  timestamps: true, // Adds createdAt and updatedAt 
+  // automatically
+    tableName: 'users',  // Ensure the table name matches exactly
+  freezeTableName: true,
 });
 
 export default User;

@@ -5,6 +5,7 @@ import { Op } from 'sequelize';
 // Register User
 export const registerUser = async (req, res) => {
   const { username, email, password, domain, sportIds, role } = req.body;
+  console.log
   const saltRounds = 10;
   try {
     const normalizedDomain = domain ? domain.toLowerCase() : null;
