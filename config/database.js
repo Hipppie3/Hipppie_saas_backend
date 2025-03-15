@@ -1,23 +1,14 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
-import fs from 'fs';
 
 // Load environment variables
 dotenv.config({ path: '../.env' });
 
-// Load AWS RDS CA certificate
-const sslOptions = {
-  require: true,
-  rejectUnauthorized: true, // Verify the certificate
-  ca: fs.readFileSync('rds-ca.pem').toString(), // Load the AWS certificate
-};
-
-// Create the Sequelize instance with SSL
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    ssl: sslOptions,
+    ssl: process.env.PGSSLMODE ? { require: true, rejectUnauthorized: false } : false,
   },
 });
 
