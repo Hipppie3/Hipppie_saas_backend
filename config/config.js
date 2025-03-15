@@ -24,7 +24,8 @@ const dbConfig = {
       ssl: {
         require: true,
         rejectUnauthorized: false, // AWS RDS SSL fix
-        ca: fs.readFileSync(path.join(__dirname, 'rds-ca-2019-root.pem')).toString(), // Use the downloaded certificate
+        ca: fs.readFileSync(path.join(__dirname, 'certs/rds-ca-2019-root.pem')).toString(),
+      // Use the downloaded certificate
       },
     },
   },
