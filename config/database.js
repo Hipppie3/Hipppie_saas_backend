@@ -1,18 +1,22 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
-// Explicitly load .env from the project root
+// Load environment variables
 dotenv.config({ path: '../.env' });
+console.log(dotenv)
+const isProduction = process.env.NODE_ENV === 'production';
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false, // Allows AWS RDS SSL connection
-    },
-  },
+  dialectOptions: isProduction
+    ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false, // Needed for AWS RDS SSL
+        },
+      }
+    : {},
 });
 
 const connectDb = async () => {
