@@ -1,13 +1,14 @@
 import { Sequelize } from 'sequelize';
-import dbConfig from './config.js';
+import 'dotenv/config';
 
-const { connectionString } = dbConfig;
-
-const sequelize = new Sequelize(connectionString, {
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    ssl: false, // ❌ Disable SSL temporarily
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // Allows AWS RDS SSL connection
+    },
   },
 });
 
