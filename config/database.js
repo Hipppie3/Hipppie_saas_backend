@@ -8,9 +8,9 @@ dotenv.config({ path: '../.env' });
 // Ensure the RDS CA Certificate is available
 const sslOptions = {
   require: true,
-  rejectUnauthorized: true, // Now verifying the self-signed cert
-  ca: fs.readFileSync('rds-ca.pem').toString(), // Load the AWS certificate
+  rejectUnauthorized: false, // Disable strict SSL verification
 };
+
 
 // Force SSL to be used with the certificate
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
