@@ -17,6 +17,8 @@ import gamePeriodRoutes from './routes/gamePeriodRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5122;
+dotenv.config({ path: '../.env' });
+console.log(process.env); // Log environment variables to verify they are loaded
 
 // ✅ Apply Middleware
 app.use(express.json());
@@ -64,3 +66,7 @@ app.use('/api/gamePeriods', gamePeriodRoutes);
 // ✅ Start Server
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
 
+app.get('/api/test', (req, res) => {
+  console.log('GET /api/test route accessed');
+  res.json({ message: "Backend is working!" });
+});
