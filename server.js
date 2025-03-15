@@ -20,12 +20,27 @@ const PORT = process.env.PORT || 5122;
 
 // ✅ Apply Middleware
 app.use(express.json());
+<<<<<<< HEAD
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://hipppieleague.netlify.app"],
     credentials: true,
   })
 );
+=======
+const allowedOrigins = [
+  "http://localhost:5173", 
+  "https://hipppieleague.netlify.app" // ✅ Add "https://"
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
+>>>>>>> 1ac1d39ee72ea140b2c14fbd5b6b836b6a3b750d
 
 // ✅ Connect to Database BEFORE setting up session
 await connectDb(); 
