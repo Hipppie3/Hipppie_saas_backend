@@ -1,18 +1,13 @@
 import { Sequelize } from 'sequelize';
-import fs from 'fs';
 import dbConfig from './config.js';
 
 const { connectionString } = dbConfig;
 
 const sequelize = new Sequelize(connectionString, {
   dialect: 'postgres',
-  logging: false, // Set to true for debugging SQL queries if needed
+  logging: false,
   dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-      ca: fs.readFileSync('./rds-ca.pem').toString(), // AWS RDS CA Certificate
-    },
+    ssl: process.env.NODE_ENV === 'production' ? { require: true, rejectUnauthorized: false } : false,
   },
 });
 
