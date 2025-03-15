@@ -1,17 +1,17 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
-// Explicitly load environment variables
-const envLoaded = dotenv.config({ path: '../.env' });
-console.log("🔍 dotenv loaded:", envLoaded);
-console.log("🔍 DATABASE_URL:", process.env.DATABASE_URL);
+// Load environment variables
+dotenv.config({ path: '../.env' });
 
-// Ensure DATABASE_URL exists
-if (!process.env.DATABASE_URL) {
-  throw new Error("❌ DATABASE_URL is not set in environment variables!");
-}
+// Forcefully append ?sslmode=require to DATABASE_URL if it's not there
+const dbUrl = process.env.DATABASE_URL.includes('?sslmode=require')
+  ? process.env.DATABASE_URL
+  : `${process.env.DATABASE_URL}?sslmode=require`;
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+console.log("🔍 Using DATABASE_URL:", dbUrl);
+
+const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
