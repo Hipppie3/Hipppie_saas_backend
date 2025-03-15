@@ -7,7 +7,7 @@ const sequelize = new Sequelize(connectionString, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    ssl: process.env.NODE_ENV === 'production' ? { require: true, rejectUnauthorized: false } : false,
+    ssl: false, // ❌ Disable SSL temporarily
   },
 });
 
