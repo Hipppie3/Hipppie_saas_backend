@@ -5,8 +5,6 @@ import path from 'path';
 // Load environment variables
 dotenv.config();
 
-
-
 // Get the current directory path
 const __dirname = new URL('.', import.meta.url).pathname;
 
