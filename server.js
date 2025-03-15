@@ -43,8 +43,7 @@ app.use(
 
 
 // ✅ Connect to Database BEFORE setting up session
-await connectDb(); 
-
+await connectDb();
 // ✅ Apply Session Middleware AFTER DB Connection
 app.use(sessionMiddleware);
 
@@ -59,5 +58,12 @@ app.use('/api/games', gameRoutes);
 app.use('/api/playerGameStats', playerGameStatRoutes);
 app.use('/api/gamePeriods', gamePeriodRoutes);
 
-// ✅ Start Server
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server running on port ${PORT}`));
+app.get('/api/test', (req, res) => {
+  console.log('GET /api/test route accessed'); // Add this to confirm it's being hit
+  res.json({ message: "Backend is working!" });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log("Server initialized");
+});
