@@ -1,9 +1,12 @@
 import dotenv from 'dotenv';
-import fs from 'fs';  // Import fs to read the certificate file
+import fs from 'fs';
+import path from 'path';
 
+// Load environment variables
 dotenv.config({ path: '../.env' });
 
-const caCert = fs.readFileSync('./rds-ca-2019-root.pem'); // Read the RDS CA certificate
+// Get the current directory path
+const __dirname = new URL('.', import.meta.url).pathname;
 
 const dbConfig = {
   development: {
@@ -20,8 +23,8 @@ const dbConfig = {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: true,  // Ensure SSL verification is enabled
-        ca: caCert,  // Provide the CA certificate for validation
+        rejectUnauthorized: false, // AWS RDS SSL fix
+        ca: fs.readFileSync(path.join(__dirname, 'rds-ca-2019-root.pem')).toString(), // Use the downloaded certificate
       },
     },
   },
