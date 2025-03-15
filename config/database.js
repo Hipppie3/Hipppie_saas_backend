@@ -1,17 +1,12 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
-// Load the correct .env file based on NODE_ENV
-if (process.env.NODE_ENV === 'production') {
-  dotenv.config({ path: '.env.production' });  // Load production environment variables
-} else {
-  dotenv.config();  // Load default local environment variables
-}
+dotenv.config({ path: '../.env' });
 
-const sequelize = process.env.DATABASE_URL
-  ? new Sequelize(process.env.DATABASE_URL, {   // Use DATABASE_URL for production
+const sequelize = process.env.NODE_ENV === 'production'
+  ? new Sequelize(process.env.DATABASE_URL, {
       dialect: 'postgres',
-      logging: false,  // Disable logging in production
+      logging: false,
       dialectOptions: {
         ssl: {
           require: true,
@@ -24,14 +19,13 @@ const sequelize = process.env.DATABASE_URL
       process.env.DB_USERNAME,
       process.env.DB_PASSWORD,
       {
-        host: process.env.DB_HOST || '127.0.0.1',  // Default to localhost for local development
-        port: process.env.DB_PORT || 5432,
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
         dialect: 'postgres',
-        logging: console.log,  // Enable query logging for local development
+        logging: false,
       }
     );
 
-// Function to connect to the database
 const connectDb = async () => {
   try {
     await sequelize.authenticate();
