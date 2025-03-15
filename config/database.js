@@ -3,16 +3,28 @@ import { Sequelize } from 'sequelize';
 
 dotenv.config({ path: '../.env' });
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false, // 👈 Force SSL but ignore self-signed certs
-    },
-  },
-});
+const sequelize = process.env.NODE_ENV === 'production'
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      logging: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false,
+        },
+      },
+    })
+  : new Sequelize(
+      process.env.DB_NAME,
+      process.env.DB_USERNAME,
+      process.env.DB_PASSWORD,
+      {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        dialect: 'postgres',
+        logging: false,
+      }
+    );
 
 const connectDb = async () => {
   try {
