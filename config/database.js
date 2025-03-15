@@ -1,7 +1,35 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { Sequelize } from 'sequelize';
 
+// Load environment variables
 dotenv.config({ path: '../.env' });
+
+const __dirname = new URL('.', import.meta.url).pathname;
+
+const dbConfig = {
+  development: {
+    username: process.env.DB_USERNAME || 'db_manager',
+    password: process.env.DB_PASSWORD || 'your_password',
+    database: process.env.DB_NAME || 'hipppie_saas_db',
+    host: process.env.DB_HOST || '127.0.0.1',
+    port: process.env.DB_PORT || 5432,
+    dialect: 'postgres',
+    logging: false,  // Disable logging in development
+  },
+  production: {
+    use_env_variable: 'DATABASE_URL',
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,  // Allow self-signed certificates in production
+        ca: process.env.NODE_ENV === 'production' ? fs.readFileSync(path.join(__dirname, 'rds-ca-2019-root.pem')).toString() : undefined,  // Only include CA certificate in production
+      },
+    },
+  },
+};
 
 const sequelize = process.env.NODE_ENV === 'production'
   ? new Sequelize(process.env.DATABASE_URL, {
@@ -10,7 +38,7 @@ const sequelize = process.env.NODE_ENV === 'production'
       dialectOptions: {
         ssl: {
           require: true,
-          rejectUnauthorized: true,
+          rejectUnauthorized: false,  // Fix for self-signed certificate in Heroku production
         },
       },
     })
@@ -22,7 +50,7 @@ const sequelize = process.env.NODE_ENV === 'production'
         host: process.env.DB_HOST,
         port: process.env.DB_PORT,
         dialect: 'postgres',
-        logging: false,
+        logging: false,  // Disable logging in development
       }
     );
 
