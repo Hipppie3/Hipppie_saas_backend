@@ -4,7 +4,8 @@ import path from 'path';
 import { Sequelize } from 'sequelize';
 
 // Load environment variables
-dotenv.config({ path: '../.env' });
+dotenv.config();
+
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
