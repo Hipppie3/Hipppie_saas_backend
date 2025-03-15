@@ -1,14 +1,16 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
-// Load environment variables
 dotenv.config({ path: '../.env' });
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    ssl: process.env.PGSSLMODE ? { require: true, rejectUnauthorized: false } : false,
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // 👈 Force SSL but ignore self-signed certs
+    },
   },
 });
 
