@@ -1,25 +1,12 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
-const dbConfig =
-  process.env.NODE_ENV === "production"
-    ? {
-        connectionString: process.env.DATABASE_URL, // Use AWS RDS when in production
-        dialect: "postgres",
-        dialectOptions: {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false, // Required for AWS RDS
-          },
-        },
-      }
-    : {
-        username: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        dialect: "postgres",
-      };
+const dbConfig = {
+  connectionString: process.env.DATABASE_URL || `postgres://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`,
+  dialect: 'postgres',
+  dialectOptions: {
+    ssl: {
+      require: process.env.NODE_ENV === 'production', // Only use SSL in production (AWS RDS)
+      rejectUnauthorized: false, // Needed for AWS RDS SSL connection
+    },
+  },
+};
 
 export default dbConfig;
