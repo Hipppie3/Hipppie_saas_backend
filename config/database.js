@@ -40,6 +40,9 @@ const sequelize = process.env.DATABASE_URL
         ssl: {
           require: true,
           rejectUnauthorized: false,  // Fix for self-signed certificate in Heroku production
+          ca: process.env.NODE_ENV === 'production' 
+            ? fs.readFileSync(path.join(__dirname, 'rds-ca-2019-root.pem')).toString() 
+            : undefined, // Only include CA certificate in production
         },
       },
     })
@@ -54,6 +57,7 @@ const sequelize = process.env.DATABASE_URL
         logging: false,  // Disable logging in development
       }
     );
+
 
 // Function to connect to the database
 const connectDb = async () => {
