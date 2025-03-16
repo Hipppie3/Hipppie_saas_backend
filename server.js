@@ -40,8 +40,6 @@ app.use(
   })
 );
 
-
-
 // ✅ Connect to Database BEFORE setting up session
 await connectDb();
 // ✅ Apply Session Middleware AFTER DB Connection
