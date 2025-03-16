@@ -16,10 +16,13 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
 cookie: {
-  secure: process.env.NODE_ENV === 'production' ? true : false,
+  scookie: {
+  secure: process.env.NODE_ENV === 'production',  // `secure: true` for production (HTTPS), `false` for local (HTTP)
   httpOnly: true,
-  sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',  // Change for local
-  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: 'Lax',  // Use 'Lax' for both local and production
+  maxAge: 24 * 60 * 60 * 1000,  // 24 hours
+}
+
 }
 ,
 });
