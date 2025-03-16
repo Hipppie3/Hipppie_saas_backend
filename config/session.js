@@ -1,32 +1,23 @@
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
-import dbConfig from './config.js';
+import { Sequelize } from 'sequelize';
 
-// Ensure we're using the right environment
-const env = process.env.NODE_ENV || 'development';
-const dbSettings = dbConfig[env]; // ✅ Select correct database settings
-
-console.log("🔍 Session Store Config:", dbSettings); // ✅ Debugging log
-
+// Session Store Connection for Production (Heroku)
 const sessionMiddleware = session({
   store: new (pgSession(session))({
-    conObject: {
-      user: dbSettings.username,
-      password: dbSettings.password,
-      host: dbSettings.host,
-      database: dbSettings.database,
-      port: dbSettings.port,
-    },
+    conObject: process.env.NODE_ENV === 'production'
+      ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+      : { user: process.env.DB_USERNAME, password: process.env.DB_PASSWORD, host: process.env.DB_HOST, database: process.env.DB_NAME, port: process.env.DB_PORT },
     tableName: 'sessions',
   }),
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
   saveUninitialized: false,
-cookie: {
-  secure: process.env.NODE_ENV === 'production', // Enable secure cookies in production
-  httpOnly: true, // Prevent client-side access to the cookies
-  sameSite: 'None', // Necessary for cross-origin cookies in production
-}
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'None',
+  },
 });
 
 export default sessionMiddleware;
