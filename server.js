@@ -64,3 +64,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log("Server initialized");
 });
+
+app.get('/api/test-session', (req, res) => {
+  console.log('Current session:', req.session);
+  res.json({ session: req.session });
+});
