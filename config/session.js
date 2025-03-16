@@ -21,7 +21,6 @@ const sessionMiddleware = session({
     secure: process.env.NODE_ENV === 'production', // ✅ True for HTTPS, false for localhost
     httpOnly: true,
     sameSite: 'None', // ✅ Required for cross-origin session cookies
-    domain: 'hipppieleague.netlify.app',  // ✅ Explicitly set your domain
     maxAge: 24 * 60 * 60 * 1000, // ✅ 24-hour session persistence
   },
 });
