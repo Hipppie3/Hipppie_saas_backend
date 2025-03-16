@@ -1,7 +1,3 @@
-import dotenv from 'dotenv';
-
-// ✅ Explicitly load the correct environment file
-dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import { Sequelize } from 'sequelize';
@@ -18,10 +14,13 @@ const sessionMiddleware = session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Use false for local development
-      httpOnly: true,
-      sameSite: 'None', // This is necessary for cross-origin cookies
-    },
+  secure: true,  // ✅ Required for HTTPS
+  httpOnly: true,
+  sameSite: 'None',  // ✅ Needed for cross-origin cookies
+  domain: '.netlify.app',  // ✅ Applies to your subdomain on Netlify
+  maxAge: 24 * 60 * 60 * 1000,  // 24 hours
+}
+
   })
 
 
