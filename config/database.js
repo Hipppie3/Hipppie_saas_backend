@@ -39,7 +39,7 @@ const sequelize = process.env.DATABASE_URL
       dialectOptions: {
         ssl: {
           require: true,
-          rejectUnauthorized: false,  // Fix for self-signed certificate in Heroku production
+          rejectUnauthorized: true,  // Fix for self-signed certificate in Heroku production
         },
       },
     })

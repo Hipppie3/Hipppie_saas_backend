@@ -22,10 +22,11 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-  },
+cookie: {
+  secure: process.env.NODE_ENV === 'production', // Enable secure cookies in production
+  httpOnly: true, // Prevent client-side access to the cookies
+  sameSite: 'None', // Necessary for cross-origin cookies in production
+}
 });
 
 export default sessionMiddleware;

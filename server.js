@@ -22,12 +22,6 @@ dotenv.config({ path: '../.env' });
 
 // ✅ Apply Middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://hipppieleague.netlify.app"],
-    credentials: true,
-  })
-);
 const allowedOrigins = [
   "http://localhost:5173", 
   "https://hipppieleague.netlify.app" // ✅ Add "https://"
@@ -44,6 +38,7 @@ app.use(
 await connectDb();
 // ✅ Apply Session Middleware AFTER DB Connection
 app.use(sessionMiddleware);
+app.set('trust proxy', 1); // Trust Heroku's proxy
 
 // ✅ Register Routes
 app.use('/api/users', userRoutes);
