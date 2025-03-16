@@ -2,7 +2,7 @@ import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import { Sequelize } from 'sequelize';
 
-// Session Store Connection for Production (Heroku)
+// Session Store Connection for Production (Heroku) and Local (localhost)
 const sessionMiddleware = session({
   store: new (pgSession(session))({
     conObject: process.env.NODE_ENV === 'production'
@@ -14,9 +14,9 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // Set to false for local development
     httpOnly: true,
-    sameSite: 'None',
+    sameSite: 'None', // For cross-origin cookies in production
   },
 });
 
