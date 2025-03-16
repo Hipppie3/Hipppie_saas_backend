@@ -17,6 +17,7 @@ const sessionMiddleware = session({
       secure: process.env.NODE_ENV === 'production', // Use false for local development
       httpOnly: true,
       sameSite: 'None', // This is necessary for cross-origin cookies
+      domain: 'localhost'
     },
   })
 
