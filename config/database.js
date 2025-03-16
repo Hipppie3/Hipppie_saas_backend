@@ -25,7 +25,7 @@ const dbConfig = {
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: true,  // Allow self-signed certificates in production
+        rejectUnauthorized: false,  // Allow self-signed certificates in production
         ca: process.env.NODE_ENV === 'production' ? fs.readFileSync(path.join(__dirname, 'rds-ca-2019-root.pem')).toString() : undefined,  // Only include CA certificate in production
       },
     },
