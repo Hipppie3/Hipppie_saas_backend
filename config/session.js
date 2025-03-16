@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+
+// ✅ Explicitly load the correct environment file
+dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import { Sequelize } from 'sequelize';
