@@ -74,13 +74,6 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
     req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain};
-    res.on('finish', () => {
-  console.log("Response Headers:", res.getHeaders());
-});
-
-console.log("Session ID:", req.sessionID);
-
-
     res.status(200).json({ message: 'Login successful', user: req.session.user });
   } catch (error) {
     console.error('Error logging in:', error);
@@ -105,8 +98,6 @@ export const logoutUser = async (req, res) => {
 // Check Authentication
 export const checkAuth = async (req, res) => {
   console.log("Checking session:", req.session.user);
-    console.log('Session ID:', req.sessionID);
-  console.log('Session:', req.session);
   if (!req.session.user) {
     return res.json({ authenticated: false, user: null });
   }
