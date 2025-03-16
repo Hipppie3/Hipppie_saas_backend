@@ -15,12 +15,13 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',  // Ensure cookies are sent over HTTPS
-    httpOnly: true,
-    sameSite: 'None',  // Essential for cross-origin cookies
-    maxAge: 24 * 60 * 60 * 1000,  // 24 hours
-  },
+cookie: {
+  secure: process.env.NODE_ENV === 'production' ? true : false,
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',  // Change for local
+  maxAge: 24 * 60 * 60 * 1000,
+}
+,
 });
 
 export default sessionMiddleware;
