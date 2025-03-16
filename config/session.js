@@ -1,6 +1,4 @@
 import dotenv from 'dotenv';
-
-// ✅ Ensure the correct `.env` file is loaded
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
 
 import session from 'express-session';
@@ -17,13 +15,13 @@ const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // ✅ True for HTTPS, false for localhost
-    httpOnly: true,
-    sameSite: 'None', // ✅ Required for cross-origin session cookies
-    maxAge: 24 * 60 * 60 * 1000, // ✅ 24-hour session persistence
-  },
+cookie: {
+  secure: process.env.NODE_ENV === 'production' ? true : false,
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',  // Change for local
+  maxAge: 24 * 60 * 60 * 1000,
+}
+,
 });
 
 export default sessionMiddleware;
-
