@@ -1,9 +1,8 @@
 import dotenv from 'dotenv';
+
+// ✅ Ensure the correct `.env` file is loaded
 dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
-console.log("Current NODE_ENV:", process.env.NODE_ENV);
-console.log("Database URL:", process.env.DATABASE_URL);
-console.log("Database Username:", process.env.DB_USERNAME);
-console.log("Session Secret:", process.env.SESSION_SECRET);
+
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 
@@ -19,7 +18,7 @@ const sessionMiddleware = session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // ✅ True for HTTPS in production, false for HTTP in localhost
+    secure: process.env.NODE_ENV === 'production', // ✅ True for HTTPS, false for localhost
     httpOnly: true,
     sameSite: 'None', // ✅ Required for cross-origin session cookies
     maxAge: 24 * 60 * 60 * 1000, // ✅ 24-hour session persistence
@@ -27,3 +26,4 @@ const sessionMiddleware = session({
 });
 
 export default sessionMiddleware;
+
