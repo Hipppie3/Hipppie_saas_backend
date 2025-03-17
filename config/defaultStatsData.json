@@ -10,6 +10,8 @@
     { "name": "Field Goals Attempted", "shortName": "FGA" },
     { "name": "Free Throws Made", "shortName": "FTM" },
     { "name": "Free Throws Attempted", "shortName": "FTA" },
+    { "name": "Two-Pointers Made", "shortName": "2PM" },
+    { "name": "Two-Pointers Attempted", "shortName": "2PA" },
     { "name": "Three-Pointers Made", "shortName": "3PM" },
     { "name": "Three-Pointers Attempted", "shortName": "3PA" }
   ],

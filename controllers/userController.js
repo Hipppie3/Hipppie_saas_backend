@@ -73,7 +73,7 @@ export const loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
-    req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain};
+    req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role, domain: user.domain};
     res.status(200).json({ message: 'Login successful', user: req.session.user });
   } catch (error) {
     console.error('Error logging in:', error);
@@ -98,6 +98,7 @@ export const logoutUser = async (req, res) => {
 // Check Authentication
 export const checkAuth = async (req, res) => {
   console.log("Checking session:", req.session.user);
+  
   if (!req.session.user) {
     return res.json({ authenticated: false, user: null });
   }
@@ -125,9 +126,9 @@ export const checkAuth = async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role,
+        email: user.email,
         domain: user.domain,
-        sports: user.sports, // Now includes an array of the user's sports
+        ...(user.role === 'super_admin' && { role: user.role }), // ✅ Only include role if super_admin
       }
     });
 
@@ -137,10 +138,13 @@ export const checkAuth = async (req, res) => {
   }
 };
 
+
+
+// Update User
 // Update User
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { username, oldPassword, newPassword, email, domain, sportIds } = req.body;
+  const { username, oldPassword, newPassword, email, domain, removePassword } = req.body;
   const requestingUser = req.user;
 
   try {
@@ -148,44 +152,57 @@ export const updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+
     if (requestingUser.role !== 'super_admin' && requestingUser.id !== user.id) {
       return res.status(403).json({ error: 'You can only update your own profile' });
     }
-    if (username && username !== user.username) {
-      const existingUser = await User.findOne({ where: { username } });
-      if (existingUser) return res.status(400).json({ error: 'Username already taken' });
-    }
-    if (email && email !== user.email) {
-      const existingEmail = await User.findOne({ where: { email } });
-      if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
-    }
-    const normalizedDomain = domain ? domain.toLowerCase() : user.domain;
-    if (domain && domain !== user.domain) {
-      const existingDomain = await User.findOne({ where: { domain: normalizedDomain } });
-      if (existingDomain) return res.status(400).json({ error: 'Domain already in use' });
-    }
-    let hashedPassword;
-    if (newPassword) {
-      if (!oldPassword) {
-        return res.status(400).json({ error: 'Current password is required to change password' });
+
+    if (requestingUser.role === 'super_admin') {
+      if (username && username !== user.username) {
+        const existingUser = await User.findOne({ where: { username } });
+        if (existingUser) return res.status(400).json({ error: 'Username already taken' });
       }
-      const isMatch = await bcrypt.compare(oldPassword, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ error: 'Incorrect current password' });
+      if (email && email !== user.email) {
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
+      }
+      const normalizedDomain = domain ? domain.toLowerCase() : user.domain;
+      if (domain && domain !== user.domain) {
+        const existingDomain = await User.findOne({ where: { domain: normalizedDomain } });
+        if (existingDomain) return res.status(400).json({ error: 'Domain already in use' });
+      }
+    }
+
+    let hashedPassword = user.password;
+
+    // ✅ Remove password if `removePassword` is true
+    if (removePassword) {
+      hashedPassword = null;
+    } 
+    // ✅ Handle new password
+    else if (newPassword) {
+      if (user.password) {
+        if (!oldPassword) {
+          return res.status(400).json({ error: 'Current password is required to change password' });
+        }
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ error: 'Incorrect current password' });
+        }
       }
       hashedPassword = await bcrypt.hash(newPassword, 10);
     }
+
+    // ✅ Explicitly set password to `NULL` when removing password
     await user.update({
       username: username || user.username,
-      password: hashedPassword || user.password,
-      email: email !== undefined && email.trim() === "" ? null : email,
-      domain: domain !== undefined && domain.trim() === "" ? null : normalizedDomain,
+      password: removePassword ? null : hashedPassword, // ✅ Make sure this sets NULL when `removePassword` is true
+      email: email && email.trim() === "" ? null : email,
+      domain: (requestingUser.role === 'super_admin' && domain && domain.trim() === "") ? null : user.domain,
     });
-    if (sportIds && Array.isArray(sportIds)) {
-      const sports = await Sport.findAll({ where: { id: sportIds } });
-      await user.setSports(sports); 
-    }
+
     const updatedUser = await User.findByPk(id, { include: { model: Sport, as: "sports" } });
+
     res.status(200).json({
       message: 'User updated successfully',
       success: true,
@@ -196,6 +213,7 @@ export const updateUser = async (req, res) => {
     res.status(500).json({ message: 'Failed to update user' });
   }
 };
+
 
 
 
@@ -254,27 +272,32 @@ export const getUsers = async (req, res) => {
 
 
 
+
 // Get User By ID
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   const requestingUser = req.user;
-  if (requestingUser.role !== 'super_admin') {
-    return res.status(403).json({ error: 'Only super admin can view the user' });
+
+  // Check if the requesting user is trying to fetch their own data or is a super_admin
+  if (requestingUser.role !== 'super_admin' && requestingUser.id !== Number(id)) {
+    return res.status(403).json({ error: 'You are not authorized to view this user' });
   }
+
   try {
     const user = await User.findByPk(id, {
-      attributes: ['id', 'username', 'email', 'role', 'domain'], // Exclude password
+      attributes: ['id', 'username', 'email', 'domain'], // Exclude password
     });
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.status(200).json({ 
-      message: 'User fetched successfully', 
+
+    res.status(200).json({
+      message: 'User fetched successfully',
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,
         domain: user.domain,
       }
     });
@@ -283,6 +306,7 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 };
+
 
 
 
