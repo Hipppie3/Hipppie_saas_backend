@@ -150,6 +150,14 @@ export const getLeagueById = async (req, res) => {
     if (!league) {
       return res.status(404).json({ message: "League not found" });
     }
+    if (!league.teams || !Array.isArray(league.teams) || league.teams.length === 0) {
+      league.teams = [];
+    }
+
+    // ✅ Check if games array exists and is not empty
+    if (!league.games || !Array.isArray(league.games) || league.games.length === 0) {
+      league.games = [];
+    }
 
     // ✅ Recalculate wins and losses
     const teamsMap = {};
@@ -157,17 +165,35 @@ export const getLeagueById = async (req, res) => {
       teamsMap[team.id] = { id: team.id, name: team.name, leagueId: team.leagueId, wins: 0, losses: 0 };
     });
 
-    league.games.forEach(game => {
-      if (game.status === "completed") {
-        if (game.score_team1 > game.score_team2) {
-          teamsMap[game.team1_id].wins++;
-          teamsMap[game.team2_id].losses++;
-        } else if (game.score_team2 > game.score_team1) {
-          teamsMap[game.team2_id].wins++;
-          teamsMap[game.team1_id].losses++;
-        }
+league.games.forEach(game => {
+  if (game.status === "completed") {
+    // Ensure team1 exists in teamsMap
+    if (teamsMap[game.team1_id]) {
+      if (game.score_team1 > game.score_team2) {
+        teamsMap[game.team1_id].wins++;
+        teamsMap[game.team2_id].losses++;
+      } else if (game.score_team2 > game.score_team1) {
+        teamsMap[game.team2_id].wins++;
+        teamsMap[game.team1_id].losses++;
       }
-    });
+    } else {
+      console.error(`Team with ID ${game.team1_id} not found in teamsMap`);
+    }
+
+    // Ensure team2 exists in teamsMap
+    if (teamsMap[game.team2_id]) {
+      if (game.score_team2 > game.score_team1) {
+        teamsMap[game.team2_id].wins++;
+        teamsMap[game.team1_id].losses++;
+      } else if (game.score_team1 > game.score_team2) {
+        teamsMap[game.team1_id].wins++;
+        teamsMap[game.team2_id].losses++;
+      }
+    } else {
+      console.error(`Team with ID ${game.team2_id} not found in teamsMap`);
+    }
+  }
+});
 
     // ✅ Replace teams array with recalculated data
     league.teams = Object.values(teamsMap);

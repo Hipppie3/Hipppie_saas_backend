@@ -3,7 +3,7 @@ import { GamePeriodScore, GamePeriod } from "../models/index.js"; // Adjust impo
 export const updatePeriodScores = async (req, res) => {
   try {
     const { game_id, scores } = req.body;
-
+    console.log
     if (!game_id || !Array.isArray(scores)) {
       return res.status(400).json({ error: "Invalid request data" });
     }
