@@ -168,6 +168,29 @@ export const getPlayerById = async (req, res) => {
 
     if (!player) return res.status(404).json({ message: "Player not found" });
 
+    // ✅ Fetch userId from player
+    const user = await User.findByPk(player.userId, {
+      include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
+    });
+
+    if (!user || !user.sports.length) {
+      return res.status(400).json({ message: "Sport ID could not be determined for this player" });
+    }
+
+    // ✅ Extract sportId
+    const sportId = user.sports[0].id;
+
+    // ✅ Fetch all stats for the determined sportId
+    const allStats = await Stat.findAll({
+      where: { sportId, userId: player.userId }
+    });
+    console.log(allStats)
+    // ✅ Merge gameStats with allStats to ensure missing stats are set to 0
+    const playerStats = await PlayerGameStat.findAll({
+      where: { player_id: id},
+      include: [{ model: Stat, as: "stat"}]
+    })
+
     // ✅ Ensure image is a string (URL) and not a Buffer
     res.status(200).json({
       message: "Player fetched successfully",
@@ -175,6 +198,8 @@ export const getPlayerById = async (req, res) => {
         ...player.toJSON(),
         image: player.image ? player.image.toString() : null, // ✅ Convert Buffer to string
       },
+        allStats,
+        playerStats
     });
   } catch (error) {
     console.error("Error fetching player:", error);
