@@ -22,7 +22,7 @@ module.exports = {
         allowNull: true,
       },
       image: {
-        type: Sequelize.BLOB('medium'), // Stores image as binary data
+        type: Sequelize.STRING, // Changed from BLOB to STRING to store the image URL
         allowNull: true,
       },
       userId: {

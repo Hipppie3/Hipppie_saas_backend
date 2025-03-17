@@ -1,9 +1,11 @@
-import { League, Sport, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js'
+import { League, Sport, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js';
+import s3 from '../config/aws.js'; // Import the AWS S3 configuration
+import { PutObjectCommand } from '@aws-sdk/client-s3'; // AWS SDK v3
+import { DeleteObjectCommand } from '@aws-sdk/client-s3'; // For deleting from S3
 
-// Create Player with Image Upload
 export const createPlayer = async (req, res) => {
-  const { firstName, lastName, age, teamId } = req.body; // Remove leagueId from body
-  const image = req.file ? req.file.buffer : null;
+  const { firstName, lastName, age, teamId } = req.body; 
+  const image = req.file ? req.file : null;  // Get the image file from the request
 
   if (!firstName) {
     return res.status(400).json({ message: "First name is required" });
@@ -20,27 +22,41 @@ export const createPlayer = async (req, res) => {
     if (age && isNaN(parsedAge)) return res.status(400).json({ message: "Invalid age format" });
     if (teamId && isNaN(parsedTeamId)) return res.status(400).json({ message: "Invalid teamId format" });
 
-    // Fetch team and get leagueId from it
     const team = parsedTeamId ? await Team.findByPk(parsedTeamId) : null;
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
 
-    // ✅ Automatically set leagueId from team
+    // Set leagueId from the team
     const leagueId = team.leagueId;
 
-    // Create Player
+    // Image Upload to S3 using AWS SDK v3
+    let imageUrl = null;
+    if (image) {
+      const fileName = `${Date.now()}-${image.originalname}`;
+      const uploadParams = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: `players/${fileName}`, // Folder structure in S3
+        Body: image.buffer,
+        ContentType: image.mimetype,
+      };
+
+      const command = new PutObjectCommand(uploadParams); // Create the upload command
+      const uploadResult = await s3.send(command); // Send to S3 using the `send` method
+      imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/players/${fileName}`;
+    }
+
+    // Create the player with the image URL
     const player = await Player.create({
       firstName,
       lastName,
       age: parsedAge,
-      image,
+      image: imageUrl, // Store image URL
       userId: req.user.id,
-      leagueId, // ✅ Set leagueId from team
+      leagueId,
       teamId: parsedTeamId,
     });
 
-    // Fetch the created player with full team details
     const playerWithTeam = await Player.findOne({
       where: { id: player.id },
       include: { model: Team, as: "team" },
@@ -56,17 +72,15 @@ export const createPlayer = async (req, res) => {
 
 
 
+
 export const getPlayers = async (req, res) => {
   try {
     const { domain } = req.query;
     const userId = req.session.user?.id;
     const isSuperAdmin = req.session.user?.role === "super_admin";
 
-    console.log(domain)
-
     let players = [];
     if (isSuperAdmin) {
-      // Super admin can see all players
       players = await Player.findAll({
         include: [
           { model: League, as: "league" },
@@ -74,33 +88,29 @@ export const getPlayers = async (req, res) => {
         ],
       });
     } else if (domain) {
-      // Find the user associated with the domain
       const user = await User.findOne({ where: { domain } });
-      console.log(user.id)
       if (!user) {
         return res.status(404).json({ message: "No players found for this domain" });
       }
       const leagues = await League.findAll({ where: { userId: user.id } });
-      console.log("Leagues Found:", leagues);
 
       players = await Player.findAll({
         include: [
           {
             model: League,
             as: "league",
-            where: { userId: user.id }, // Ensure players are from leagues belonging to the domain user
+            where: { userId: user.id },
           },
           { model: Team, as: "team" },
         ],
       });
     } else if (userId) {
-      // Normal user can only see players from their own leagues
       players = await Player.findAll({
         include: [
           {
             model: League,
             as: "league",
-            where: { userId }, // Ensure players are from leagues belonging to the user
+            where: { userId },
           },
           { model: Team, as: "team" },
         ],
@@ -109,13 +119,13 @@ export const getPlayers = async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
+    // Ensure player image is a string (URL) and not a Buffer
     const formattedPlayers = players.map((player) => ({
       ...player.toJSON(),
-      image: player.image
-        ? `data:image/jpeg;base64,${player.image.toString("base64")}` // ✅ Keep image data
-        : null,
-      imageAvailable: !!player.image, // ✅ Also indicate if an image exists
+      image: player.image ? player.image.toString() : null, // ✅ Convert Buffer to string
+      imageAvailable: !!player.image, // Indicates if the image exists
     }));
+
     res.status(200).json({
       message: formattedPlayers.length ? "Players fetched successfully" : "No players found",
       players: formattedPlayers,
@@ -125,6 +135,7 @@ export const getPlayers = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch players" });
   }
 };
+
 
 
 
@@ -157,31 +168,13 @@ export const getPlayerById = async (req, res) => {
 
     if (!player) return res.status(404).json({ message: "Player not found" });
 
-    // ✅ Fetch userId from player
-    const user = await User.findByPk(player.userId, {
-      include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
-    });
-
-    if (!user || !user.sports.length) {
-      return res.status(400).json({ message: "Sport ID could not be determined for this player" });
-    }
-
-    // ✅ Extract sportId
-    const sportId = user.sports[0].id;
-
-    // ✅ Fetch all stats for the determined sportId
-    const allStats = await Stat.findAll({
-      where: { sportId, userId: player.userId }
-    });
-    console.log(allStats)
-    // ✅ Merge gameStats with allStats to ensure missing stats are set to 0
-    const playerStats = await PlayerGameStat.findAll({
-      where: { player_id: id},
-      include: [{ model: Stat, as: "stat"}]
-    })
-
+    // ✅ Ensure image is a string (URL) and not a Buffer
     res.status(200).json({
-      player, allStats, playerStats
+      message: "Player fetched successfully",
+      player: {
+        ...player.toJSON(),
+        image: player.image ? player.image.toString() : null, // ✅ Convert Buffer to string
+      },
     });
   } catch (error) {
     console.error("Error fetching player:", error);
@@ -192,35 +185,47 @@ export const getPlayerById = async (req, res) => {
 
 
 
+
 export const updatePlayer = async (req, res) => {
   try {
     const { firstName, lastName, age, teamId } = req.body;
-    const image = req.file ? req.file.buffer : null; // ✅ Store raw binary data
+    const image = req.file ? req.file : null; // Get the image file from the request
     const player = await Player.findByPk(req.params.id);
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
     }
     let leagueId = player.leagueId; // Default to existing leagueId
 
-    // ✅ If teamId is updated, fetch the new team to get the correct leagueId
     if (teamId) {
       const team = await Team.findByPk(teamId);
       if (!team) {
         return res.status(404).json({ message: "Team not found" });
       }
-      leagueId = team.leagueId; // ✅ Assign correct leagueId
+      leagueId = team.leagueId; // Assign correct leagueId
     }
-    // ✅ Update fields only if new values are provided
+
+    // Update fields only if new values are provided
     player.firstName = firstName || player.firstName;
     player.lastName = lastName || player.lastName;
     player.age = age ? parseInt(age, 10) : player.age;
     player.teamId = teamId ? parseInt(teamId, 10) : player.teamId;
-    player.leagueId = leagueId; // ✅ Ensure leagueId updates
+    player.leagueId = leagueId; // Ensure leagueId updates
 
-    // ✅ Store image as BLOB (binary) in the database
+    // Image Upload to S3 using AWS SDK v3
     if (image) {
-      player.image = image;
+      const fileName = `${Date.now()}-${image.originalname}`;
+      const uploadParams = {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: `players/${fileName}`, // Folder structure in S3
+        Body: image.buffer,
+        ContentType: image.mimetype,
+      };
+
+      const command = new PutObjectCommand(uploadParams); // Create the upload command
+      const uploadResult = await s3.send(command); // Send to S3 using the `send` method
+      player.image = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/players/${fileName}`; // Store image URL
     }
+
     await player.save();
     res.json({ message: "Player updated successfully", player });
   } catch (error) {
@@ -232,7 +237,6 @@ export const updatePlayer = async (req, res) => {
 
 
 
-
 export const deletePlayer = async (req, res) => {
   const { id } = req.params;
 
@@ -240,11 +244,40 @@ export const deletePlayer = async (req, res) => {
     const player = await Player.findByPk(id);
     if (!player) {
       return res.status(404).json({ message: "Player not found" });
-    } 
+    }
+
+    // If the player has an image, delete it from S3
+    if (player.image) {
+      await deleteImageFromS3(player.image); // Delete the image from S3
+    }
+
+    // Delete the player record from the database
     await player.destroy();
     res.status(200).json({ success: true, message: "Player deleted successfully" });
   } catch (error) {
     console.error("Error deleting player:", error);
-    res.status(500).json({ message: 'Failed to delete player'});
+    res.status(500).json({ message: 'Failed to delete player' });
+  }
+};
+
+
+const deleteImageFromS3 = async (imageUrl) => {
+  if (typeof imageUrl !== 'string') {
+    console.error("Invalid image URL", imageUrl);
+    return;  // Exit early if imageUrl is not a string
+  }
+
+  const fileName = imageUrl.split('/').pop();  // Extract the file name from the URL
+  console.log("Deleting image file: ", fileName);  // Log the filename to ensure it's correct
+  const params = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: `players/${fileName}`, // Path in the S3 bucket
+  };
+
+  try {
+    await s3.send(new DeleteObjectCommand(params));  // Use `send` to delete the file
+    console.log("Image deleted from S3");
+  } catch (err) {
+    console.error("Error deleting image from S3:", err);
   }
 };
