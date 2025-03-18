@@ -121,6 +121,8 @@ export const checkAuth = async (req, res) => {
       return res.json({ authenticated: false, user: null });
     }
 
+    console.log("User sports:", user.sports); // This will log sports associated with the user
+
     return res.json({
       authenticated: true,
       user: {
@@ -128,7 +130,8 @@ export const checkAuth = async (req, res) => {
         username: user.username,
         email: user.email,
         domain: user.domain,
-        ...(user.role === 'super_admin' && { role: user.role }), // ✅ Only include role if super_admin
+        sports: user.sports, // Include sports in the response
+        ...(user.role === 'super_admin' && { role: user.role }), // Include role only if super_admin
       }
     });
 
@@ -140,11 +143,11 @@ export const checkAuth = async (req, res) => {
 
 
 
-// Update User
+
 // Update User
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { username, oldPassword, newPassword, email, domain, removePassword } = req.body;
+  const { username, oldPassword, newPassword, email, domain, removePassword, sportIds } = req.body;
   const requestingUser = req.user;
 
   try {
@@ -157,13 +160,16 @@ export const updateUser = async (req, res) => {
       return res.status(403).json({ error: 'You can only update your own profile' });
     }
 
+    // Validate username, email, and domain if the requesting user is super admin
     if (requestingUser.role === 'super_admin') {
       if (username && username !== user.username) {
         const existingUser = await User.findOne({ where: { username } });
         if (existingUser) return res.status(400).json({ error: 'Username already taken' });
       }
       if (email && email !== user.email) {
-        const existingEmail = await User.findOne({ where: { email } });
+        // If the email is an empty string, set it to null
+        const updatedEmail = email.trim() === "" ? null : email;
+        const existingEmail = await User.findOne({ where: { email: updatedEmail } });
         if (existingEmail) return res.status(400).json({ error: 'Email already registered' });
       }
       const normalizedDomain = domain ? domain.toLowerCase() : user.domain;
@@ -197,9 +203,21 @@ export const updateUser = async (req, res) => {
     await user.update({
       username: username || user.username,
       password: removePassword ? null : hashedPassword, // ✅ Make sure this sets NULL when `removePassword` is true
-      email: email && email.trim() === "" ? null : email,
+      email: email ? email.trim() : null,  // If email is empty, set to null
       domain: (requestingUser.role === 'super_admin' && domain && domain.trim() === "") ? null : user.domain,
     });
+
+    // Update sports if sportIds are provided
+    if (sportIds && sportIds.length > 0) {
+      // Remove old associations first
+      await user.setSports([]);
+
+      // Add the new sports associations
+      const newSports = await Sport.findAll({
+        where: { id: sportIds }
+      });
+      await user.addSports(newSports);  // Update the relationship table with new sports
+    }
 
     const updatedUser = await User.findByPk(id, { include: { model: Sport, as: "sports" } });
 
