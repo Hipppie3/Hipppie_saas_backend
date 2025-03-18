@@ -3,7 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { Sequelize } from 'sequelize';
 
-dotenv.config();  // Load environment variables
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env.production' });  // Load .env.production in production
+} else {
+  dotenv.config();  // Load .env for development
+}
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
