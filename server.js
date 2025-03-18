@@ -1,6 +1,11 @@
 import dotenv from 'dotenv';
-dotenv.config(); // ✅ Load environment variables first
-
+// dotenv.config()
+// dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' }); // ✅ Load .env.production in production, .env for development
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env.production' });  // Load .env.production in production
+} else {
+  dotenv.config();  // Load .env for development
+}
 import express from 'express';
 import cors from 'cors';
 import { connectDb } from './config/database.js'; // ✅ Load database first
@@ -17,7 +22,7 @@ import gamePeriodRoutes from './routes/gamePeriodRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5122;
-dotenv.config({ path: '../.env' });
+
 
 
 // ✅ Apply Middleware
