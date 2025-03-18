@@ -1,73 +1,66 @@
-import { League, Sport, Team, Player, User, PlayerGameStat, Stat, Game } from '../models/index.js';
+import { League, Sport, Team, Player, User, PlayerGameStat, Stat, Game, PlayerAttributeValue, PlayerAttribute} from '../models/index.js';
 import s3 from '../config/aws.js'; // Import the AWS S3 configuration
 import { PutObjectCommand } from '@aws-sdk/client-s3'; // AWS SDK v3
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'; // For deleting from S3
 
 export const createPlayer = async (req, res) => {
-  const { firstName, lastName, age, teamId } = req.body; 
-  const image = req.file ? req.file : null;  // Get the image file from the request
-
-  if (!firstName) {
-    return res.status(400).json({ message: "First name is required" });
-  }
-
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized: No user session" });
+    const { firstName, lastName, teamId, attributes } = req.body;
+    const image = req.file ? req.file : null;
+    const userId = req.user.id; 
+
+    if (!firstName) {
+      return res.status(400).json({ message: "First name is required" });
     }
 
-    // Convert values to numbers
-    const parsedAge = age ? parseInt(age, 10) : null;
-    const parsedTeamId = teamId ? parseInt(teamId, 10) : null;
-    if (age && isNaN(parsedAge)) return res.status(400).json({ message: "Invalid age format" });
-    if (teamId && isNaN(parsedTeamId)) return res.status(400).json({ message: "Invalid teamId format" });
+    const team = await Team.findByPk(teamId);
+    if (!team) return res.status(404).json({ message: "Team not found" });
 
-    const team = parsedTeamId ? await Team.findByPk(parsedTeamId) : null;
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    // Set leagueId from the team
     const leagueId = team.leagueId;
 
-    // Image Upload to S3 using AWS SDK v3
+    // ✅ Upload Image to S3 (if provided)
     let imageUrl = null;
     if (image) {
       const fileName = `${Date.now()}-${image.originalname}`;
       const uploadParams = {
         Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: `players/${fileName}`, // Folder structure in S3
+        Key: `players/${fileName}`,
         Body: image.buffer,
         ContentType: image.mimetype,
       };
-
-      const command = new PutObjectCommand(uploadParams); // Create the upload command
-      const uploadResult = await s3.send(command); // Send to S3 using the `send` method
+      await s3.send(new PutObjectCommand(uploadParams));
       imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/players/${fileName}`;
     }
 
-    // Create the player with the image URL
+    // ✅ Create Player
     const player = await Player.create({
       firstName,
       lastName,
-      age: parsedAge,
-      image: imageUrl, // Store image URL
-      userId: req.user.id,
+      image: imageUrl,
+      userId,
       leagueId,
-      teamId: parsedTeamId,
+      teamId,
     });
 
-    const playerWithTeam = await Player.findOne({
-      where: { id: player.id },
-      include: { model: Team, as: "team" },
-    });
+    // ✅ Get Default Attributes for User
+    const playerAttributes = await PlayerAttribute.findAll({ where: { user_id: userId } });
 
-    res.status(201).json({ message: "Player created successfully", player: playerWithTeam });
+    // ✅ Create PlayerAttributeValues (Set Empty by Default)
+    const playerAttributeValues = playerAttributes.map((attr) => ({
+      player_id: player.id,
+      attribute_id: attr.id,
+      value: attributes?.[attr.attribute_name] || "", // If provided, use value from request
+    }));
+
+    await PlayerAttributeValue.bulkCreate(playerAttributeValues);
+
+    res.status(201).json({ message: "Player created successfully", player });
   } catch (error) {
     console.error("Error creating player:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 
 
@@ -85,6 +78,11 @@ export const getPlayers = async (req, res) => {
         include: [
           { model: League, as: "league" },
           { model: Team, as: "team" },
+          {
+            model: PlayerAttributeValue,
+            as: "attributeValues",
+            include: [{ model: PlayerAttribute, as: "attribute" }],
+          },
         ],
       });
     } else if (domain) {
@@ -92,7 +90,6 @@ export const getPlayers = async (req, res) => {
       if (!user) {
         return res.status(404).json({ message: "No players found for this domain" });
       }
-      const leagues = await League.findAll({ where: { userId: user.id } });
 
       players = await Player.findAll({
         include: [
@@ -102,6 +99,11 @@ export const getPlayers = async (req, res) => {
             where: { userId: user.id },
           },
           { model: Team, as: "team" },
+          {
+            model: PlayerAttributeValue,
+            as: "attributeValues",
+            include: [{ model: PlayerAttribute, as: "attribute" }],
+          },
         ],
       });
     } else if (userId) {
@@ -113,6 +115,11 @@ export const getPlayers = async (req, res) => {
             where: { userId },
           },
           { model: Team, as: "team" },
+          {
+            model: PlayerAttributeValue,
+            as: "attributeValues",
+            include: [{ model: PlayerAttribute, as: "attribute" }],
+          },
         ],
       });
     } else {
@@ -140,66 +147,91 @@ export const getPlayers = async (req, res) => {
 
 
 
+
 export const getPlayerById = async (req, res) => {
   try {
     const { id } = req.params;
     const player = await Player.findByPk(id, {
+  include: [
+    { model: Team, as: "team" },
+    { model: League, as: "league" },
+    {
+      model: PlayerGameStat,
+      as: "gameStats",
       include: [
-        { model: Team, as: "team" },
-        { model: League, as: "league" },
+        { model: Stat, as: "stat" },
         {
-          model: PlayerGameStat,
-          as: "gameStats",
+          model: Game,
+          as: "game",
+          attributes: ["id", "date"],
           include: [
-            { model: Stat, as: "stat" },
-            {
-              model: Game,
-              as: "game",
-              attributes: ["id", "date"],
-              include: [
-                { model: Team, as: "homeTeam", attributes: ["id", "name"] },
-                { model: Team, as: "awayTeam", attributes: ["id", "name"] },
-              ],
-            },
+            { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+            { model: Team, as: "awayTeam", attributes: ["id", "name"] },
           ],
         },
       ],
-    });
+    },
+    {
+      model: PlayerAttributeValue,
+      as: "attributeValues", // Ensure attribute values are fetched
+      include: [
+        { model: PlayerAttribute, as: "attribute" }, // Include PlayerAttribute to get attribute names
+      ],
+    },
+  ],
+});
 
     if (!player) return res.status(404).json({ message: "Player not found" });
+ // Fetch the default attributes (PA) for this user
+ const userId = player.userId;
+    const defaultAttributes = await PlayerAttribute.findAll({
+      where: { user_id: userId },
+    });
+
+    // Get the current attribute IDs that the player already has in PAV
+    const playerAttributeIds = player.attributeValues.map(pav => pav.attribute_id);
+
+    // Check if any default PA attributes are missing in PAV for the player
+    for (const attribute of defaultAttributes) {
+      if (!playerAttributeIds.includes(attribute.id)) {
+        // If this PA is not associated with the player, create a missing PAV entry
+        await PlayerAttributeValue.create({
+          player_id: player.id,
+          attribute_id: attribute.id,  // Link the PA to the player
+          value: "",  // Default value, can be updated later
+        });
+        console.log(`Created missing PAV for player ${player.id} and attribute ${attribute.attribute_name}`);
+      }
+    }
 
     // ✅ Fetch userId from player
     const user = await User.findByPk(player.userId, {
       include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
     });
 
-    if (!user || !user.sports.length) {
-      return res.status(400).json({ message: "Sport ID could not be determined for this player" });
-    }
-
-    // ✅ Extract sportId
-    const sportId = user.sports[0].id;
+    // ✅ Set sportId to empty array if not found
+    const sportId = user?.sports?.length ? user.sports[0].id : [];
 
     // ✅ Fetch all stats for the determined sportId
     const allStats = await Stat.findAll({
-      where: { sportId, userId: player.userId }
+      where: { sportId, userId: player.userId },
     });
-    console.log(allStats)
+
     // ✅ Merge gameStats with allStats to ensure missing stats are set to 0
     const playerStats = await PlayerGameStat.findAll({
-      where: { player_id: id},
-      include: [{ model: Stat, as: "stat"}]
-    })
+      where: { player_id: id },
+      include: [{ model: Stat, as: "stat" }],
+    });
 
     // ✅ Ensure image is a string (URL) and not a Buffer
     res.status(200).json({
       message: "Player fetched successfully",
       player: {
         ...player.toJSON(),
-        image: player.image ? player.image.toString() : null, // ✅ Convert Buffer to string
+        image: player.image || null, // ✅ Safe check to avoid Buffer issues
       },
-        allStats,
-        playerStats
+      allStats,
+      playerStats,
     });
   } catch (error) {
     console.error("Error fetching player:", error);
@@ -213,45 +245,64 @@ export const getPlayerById = async (req, res) => {
 
 export const updatePlayer = async (req, res) => {
   try {
-    const { firstName, lastName, age, teamId } = req.body;
-    const image = req.file ? req.file : null; // Get the image file from the request
-    const player = await Player.findByPk(req.params.id);
-    if (!player) {
-      return res.status(404).json({ message: "Player not found" });
-    }
-    let leagueId = player.leagueId; // Default to existing leagueId
+    const { firstName, lastName, teamId, attributes } = req.body;
+    const image = req.file ? req.file : null;
+    const { id } = req.params;
+    
+    const player = await Player.findByPk(id);
+    if (!player) return res.status(404).json({ message: "Player not found" });
 
     if (teamId) {
       const team = await Team.findByPk(teamId);
-      if (!team) {
-        return res.status(404).json({ message: "Team not found" });
-      }
-      leagueId = team.leagueId; // Assign correct leagueId
+      if (!team) return res.status(404).json({ message: "Team not found" });
+      player.teamId = teamId;
+      player.leagueId = team.leagueId;
     }
 
-    // Update fields only if new values are provided
+    // ✅ Update Player Fields
     player.firstName = firstName || player.firstName;
     player.lastName = lastName || player.lastName;
-    player.age = age ? parseInt(age, 10) : player.age;
-    player.teamId = teamId ? parseInt(teamId, 10) : player.teamId;
-    player.leagueId = leagueId; // Ensure leagueId updates
 
-    // Image Upload to S3 using AWS SDK v3
+    // ✅ Upload Image (If New Image is Provided)
     if (image) {
       const fileName = `${Date.now()}-${image.originalname}`;
       const uploadParams = {
         Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: `players/${fileName}`, // Folder structure in S3
+        Key: `players/${fileName}`,
         Body: image.buffer,
         ContentType: image.mimetype,
       };
-
-      const command = new PutObjectCommand(uploadParams); // Create the upload command
-      const uploadResult = await s3.send(command); // Send to S3 using the `send` method
-      player.image = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/players/${fileName}`; // Store image URL
+      await s3.send(new PutObjectCommand(uploadParams));
+      player.image = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/players/${fileName}`;
     }
 
     await player.save();
+
+    // ✅ Update Player Attributes (Only If Provided)
+    if (attributes) {
+      for (const [attributeName, value] of Object.entries(attributes)) {
+        const attribute = await PlayerAttribute.findOne({
+          where: { user_id: player.userId, attribute_name: attributeName },
+        });
+
+        if (attribute) {
+          const playerAttributeValue = await PlayerAttributeValue.findOne({
+            where: { player_id: id, attribute_id: attribute.id },
+          });
+
+          if (playerAttributeValue) {
+            await playerAttributeValue.update({ value });
+          } else {
+            await PlayerAttributeValue.create({
+              player_id: id,
+              attribute_id: attribute.id,
+              value,
+            });
+          }
+        }
+      }
+    }
+
     res.json({ message: "Player updated successfully", player });
   } catch (error) {
     console.error("Error updating player:", error);

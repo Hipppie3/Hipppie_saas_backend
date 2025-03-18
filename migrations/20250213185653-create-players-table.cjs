@@ -17,10 +17,6 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
-      age: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
       image: {
         type: Sequelize.STRING, // Changed from BLOB to STRING to store the image URL
         allowNull: true,

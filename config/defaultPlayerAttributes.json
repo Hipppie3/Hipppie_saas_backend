@@ -1,0 +1,7 @@
+{
+  "defaultAttributes": [
+    { "name": "Age", "type": "number" },
+    { "name": "Height", "type": "string" },
+    { "name": "Weight", "type": "number" }
+  ]
+}

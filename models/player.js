@@ -12,11 +12,6 @@ const Player = sequelize.define('player', {
     allowNull: true,
     unique: false,
   },
-  age: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    unique: false,
-  },
   image: {
     type: DataTypes.STRING, // Now stores image URL as a string
     allowNull: true,

@@ -53,18 +53,19 @@ res.status(201).json({
 export const loginUser = async (req, res) => {
 
   const { username, password, domain } = req.body;
-
+console.log('hi')
   try {
     const whereCondition = { username };
-    if (domain) {
-      whereCondition.domain = domain; 
-    } else {
-      whereCondition.domain = { [Op.or]: [null, ""] }; 
-    }
+  if (domain !== undefined) {
+    whereCondition.domain = domain;
+  }
+    
   const user = await User.findOne({ where: whereCondition });
+  console.log(user)
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
+
     if (!user.password) {
       req.session.user = { id: user.id, username: user.username, role: user.role, domain: user.domain };
       return res.status(200).json({ message: 'Login successful (no password required)', user: req.session.user });
@@ -73,6 +74,7 @@ export const loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
+    
     req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role, domain: user.domain};
     res.status(200).json({ message: 'Login successful', user: req.session.user });
   } catch (error) {
