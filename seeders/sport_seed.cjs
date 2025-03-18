@@ -11,9 +11,14 @@ module.exports = {
       `SELECT id FROM sports WHERE name = 'Volleyball' LIMIT 1;`,
       { type: Sequelize.QueryTypes.SELECT }
     );
-    
+    // Check if Baseball exists
         const [existingBaseball] = await queryInterface.sequelize.query(
       `SELECT id FROM sports WHERE name = 'Baseball' LIMIT 1;`,
+      { type: Sequelize.QueryTypes.SELECT }
+    );
+    // Check if Tennis exists
+            const [existingTennis] = await queryInterface.sequelize.query(
+      `SELECT id FROM sports WHERE name = 'Tennis' LIMIT 1;`,
       { type: Sequelize.QueryTypes.SELECT }
     );
 
@@ -31,7 +36,9 @@ module.exports = {
       sportsToInsert.push({ name: 'Baseball', createdAt: new Date(), updatedAt: new Date() });
     }
 
-
+    if (!existingTennis) {
+      sportsToInsert.push({ name: 'Tennis', createdAt: new Date(), updatedAt: new Date() });
+    }
     if (sportsToInsert.length > 0) {
       await queryInterface.bulkInsert('sports', sportsToInsert);
     }
@@ -39,7 +46,7 @@ module.exports = {
 
   down: async (queryInterface, Sequelize) => {
     await queryInterface.bulkDelete('sports', {
-      name: { [Sequelize.Op.in]: ['Basketball', 'Volleyball', 'Baseball'] },
+      name: { [Sequelize.Op.in]: ['Basketball', 'Volleyball', 'Baseball', 'Tennis'] },
     });
   },
 };

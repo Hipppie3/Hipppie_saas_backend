@@ -35,5 +35,13 @@
   { "name": "Stolen Bases", "shortName": "SB" },
   { "name": "Earned Run Average", "shortName": "ERA" },
   { "name": "Innings Pitched", "shortName": "IP" }
-]
+  ],
+  "Tennis": [
+    { "name": "Aces", "shortName": "ACE" },
+    { "name": "Double Faults", "shortName": "DF" },
+    { "name": "First Serve Points Won", "shortName": "1st Serve Won" },
+    { "name": "Second Serve Points Won", "shortName": "2nd Serve Won" },
+    { "name": "Unforced Errors", "shortName": "UE" },
+    { "name": "Winners", "shortName": "W" }
+  ]
 }

@@ -5,7 +5,7 @@ import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePerio
 // ✅ Create a new game
 export const createGame = async (req, res) => {
   try {
-    const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2 } = req.body;
+    const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2,  video_url, location, time } = req.body;
 
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No user session' });
@@ -24,6 +24,9 @@ export const createGame = async (req, res) => {
       status,
       score_team1: score_team1 || 0,
       score_team2: score_team2 || 0,
+      video_url,
+      location,
+      time
     });
 
     // ✅ Step 2: Find Sport for the League
@@ -286,6 +289,30 @@ const recalculateTeamRecords = async (teamId) => {
 
   // ✅ Update the team's wins/losses
   await team.update({ wins, losses, ties });
+};
+
+// Update Game Details
+export const updateGameDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { video_url, location, time, status } = req.body;
+
+    const game = await Game.findByPk(id);
+    if (!game) return res.status(404).json({ error: "Game not found" });
+
+    // Update game details (excluding score)
+    game.video_url = video_url !== undefined ? video_url : game.video_url;
+    game.location = location !== undefined ? location : game.location;
+    game.time = time !== undefined ? time : game.time;
+    game.status = status || game.status; // If no status provided, keep the old one
+
+    await game.save();
+
+    res.status(200).json(game);
+  } catch (error) {
+    console.error("Error updating game details:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 

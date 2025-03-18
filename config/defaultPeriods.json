@@ -24,5 +24,13 @@
     { "name": "8th Inning", "number": 8 },
     { "name": "9th Inning", "number": 9 },
     { "name": "Extra Innings", "number": 10 }
+  ],
+  "Tennis": [
+    { "name": "1st Set", "number": 1},
+    { "name": "2nd Set", "number": 2},
+    { "name": "3rd Set", "number": 3},
+    { "name": "4th Set", "number": 4},
+    { "name": "5th set", "number": 5},
+    { "name": "Tiebreak", "number": 6}
   ]
 }

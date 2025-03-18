@@ -35,6 +35,18 @@ const Game = sequelize.define('game', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  video_url: {
+    type: DataTypes.STRING,
+    allow: true,
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  time: {
+    type: DataTypes.TIME,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });

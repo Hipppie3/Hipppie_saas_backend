@@ -40,6 +40,18 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: true,
       },
+      video_url: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      location: {
+        type: Sequelize.STRING,
+        allowNull: true,  // Can be set to false if you want to enforce a location
+      },
+      time: {
+        type: Sequelize.TIME,
+        allowNull: true,  // You can adjust this to suit the format of the game time
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

@@ -118,7 +118,7 @@ export const getLeagueById = async (req, res) => {
             model: Game,
             as: 'games',
             required: false,
-            attributes: ['id', 'team1_id', 'team2_id', 'score_team1', 'score_team2', 'status', 'date'],
+            attributes: ['id', 'team1_id', 'team2_id', 'score_team1', 'score_team2', 'status', 'date', 'location', 'time'],
           }
         ]
       });
