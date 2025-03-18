@@ -1,5 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
+// dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
+
+
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env.production' });  // Load .env.production in production
+} else {
+  dotenv.config();  // Load .env for development
+}
 
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
