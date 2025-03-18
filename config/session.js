@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 // dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env' });
 
-
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });  // Load .env.production in production
 } else {
