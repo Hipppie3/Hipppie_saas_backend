@@ -154,3 +154,21 @@ export const resetPlayerAttributes = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const reorderPlayerAttributes = async (req, res) => {
+  try {
+    const { attributes } = req.body;
+    if (!attributes || !Array.isArray(attributes)) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    for (const attribute of attributes) {
+      await PlayerAttribute.update({ order: attribute.order }, { where: { id: attribute.id } });
+    }
+
+    res.json({ message: "Player attributes reordered successfully" });
+  } catch (error) {
+    console.error("Error reordering player attributes:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

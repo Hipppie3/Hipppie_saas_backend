@@ -172,24 +172,41 @@ export const unhideGamePeriod = async (req, res) => {
 };
 
 
-export const reorderGamePeriod = async (req, res) => {
+// export const reorderGamePeriod = async (req, res) => {
+//   try {
+//     const { stats } = req.body;
+//     if (!stats || !Array.isArray(stats)) {
+//       return res.status(400).json({ message: "Invalid request data" });
+//     }
+
+//     for (const stat of stats) {
+//       await Stat.update({ order: stat.order }, { where: { id: stat.id } });
+//     }
+
+//     res.json({ message: "Stats reordered successfully" });
+//   } catch (error) {
+//     console.error("Error reordering stats:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+export const reorderGamePeriods = async (req, res) => {
   try {
-    const { stats } = req.body;
-    if (!stats || !Array.isArray(stats)) {
+    const { gamePeriods } = req.body;
+    if (!gamePeriods || !Array.isArray(gamePeriods)) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
-    for (const stat of stats) {
-      await Stat.update({ order: stat.order }, { where: { id: stat.id } });
+    for (const period of gamePeriods) {
+      await GamePeriod.update({ order: period.order }, { where: { id: period.id } });
     }
 
-    res.json({ message: "Stats reordered successfully" });
+    res.json({ message: "Game periods reordered successfully" });
   } catch (error) {
-    console.error("Error reordering stats:", error);
+    console.error("Error reordering game periods:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 

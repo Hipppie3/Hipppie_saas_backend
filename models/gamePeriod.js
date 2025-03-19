@@ -19,6 +19,11 @@ const GamePeriod = sequelize.define('gamePeriod', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  order: {
+  type: DataTypes.INTEGER,
+  allowNull: false,
+  defaultValue: 0, // ✅ Default order for sorting
+},
   hidden: {
     type: DataTypes.BOOLEAN,
     defaultValue: false, // Periods are visible by default

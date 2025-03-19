@@ -29,6 +29,11 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false, // Periods are visible by default
       },
+      order: {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

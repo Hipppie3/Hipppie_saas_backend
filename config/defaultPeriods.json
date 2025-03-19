@@ -4,7 +4,8 @@
     { "name": "2nd Quarter", "number": 2 },
     { "name": "3rd Quarter", "number": 3 },
     { "name": "4th Quarter", "number": 4 },
-    { "name": "Overtime", "number": 5 }
+    { "name": "Overtime", "number": 5 },
+    { "name": "Final", "number": 6 }
   ],
   "Volleyball": [
     { "name": "Set 1", "number": 1 },
