@@ -73,8 +73,10 @@ export const createPlayerAttribute = async (req, res) => {
       return res.status(400).json({ message: "Name and type are required" });
     }
 
-    // Normalize name
-    const normalizedName = name.replace(/\s+/g, "").toLowerCase();
+
+// Normalize name (remove spaces but keep original case)
+const normalizedName = name.replace(/\s+/g, ""); 
+
 
     // Check if attribute already exists
     const existingAttribute = await PlayerAttribute.findOne({

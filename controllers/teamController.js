@@ -1,4 +1,4 @@
-import { League, Team, Player, User, Game } from '../models/index.js'
+import { League, Team, Player, User, Game, PlayerAttribute, PlayerAttributeValue } from '../models/index.js'
 
 
 // Create Team
@@ -145,7 +145,19 @@ export const getTeamById = async (req, res) => {
     let team;
     const includeOptions = [
       { model: League, as: "league" },
-      { model: Player, as: "players" },
+        { 
+    model: Player, 
+    as: "players",
+    include: [ // ✅ Include attribute values inside players
+      {
+        model: PlayerAttributeValue,
+        as: "attributeValues",
+        include: [
+          { model: PlayerAttribute, as: "attribute" }, // ✅ Include PlayerAttribute to get attribute names
+        ],
+      },
+    ],
+  },
       {
         model: Game,
         as: "homeGames",
