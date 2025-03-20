@@ -1,4 +1,5 @@
 import { League, Team, Player, User, Game, PlayerAttribute, PlayerAttributeValue } from '../models/index.js'
+import { Sequelize } from 'sequelize'
 
 
 // Create Team
