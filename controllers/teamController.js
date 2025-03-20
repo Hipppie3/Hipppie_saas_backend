@@ -308,3 +308,29 @@ export const deleteTeam = async (req, res) => {
 }
 
 
+
+
+export const getTeamsTest = async (req, res) => {
+  try {
+    const teams = await Team.findAll({
+      attributes: [
+        'id', 'name', 'leagueId',
+        [Sequelize.literal(`
+          (SELECT COUNT(*) FROM games 
+           WHERE (games.team1_id = team.id AND games.score_team1 > games.score_team2)
+              OR (games.team2_id = team.id AND games.score_team2 > games.score_team1))`),
+          'wins'],
+        [Sequelize.literal(`
+          (SELECT COUNT(*) FROM games 
+           WHERE (games.team1_id = team.id AND games.score_team1 < games.score_team2)
+              OR (games.team2_id = team.id AND games.score_team2 < games.score_team1))`),
+          'losses']
+      ]
+    });
+
+    res.status(200).json({ message: "Teams fetched successfully", teams });
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    res.status(500).json({ message: "Failed to fetch teams" });
+  }
+};

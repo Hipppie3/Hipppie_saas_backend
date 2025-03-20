@@ -248,3 +248,15 @@ try {
 };
 
 
+export const getLeaguesTest = async (req, res) => {
+  try {
+    const leagues = await League.findAll({
+      attributes: ['id', 'name'], // ✅ Only fetching ID and name
+    });
+
+    res.status(200).json({ message: "Leagues fetched successfully", leagues });
+  } catch (error) {
+    console.error("Error fetching leagues:", error);
+    res.status(500).json({ message: "Failed to fetch leagues" });
+  }
+};
