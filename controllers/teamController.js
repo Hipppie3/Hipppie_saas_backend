@@ -324,3 +324,82 @@ export const getTeamsTest = async (req, res) => {
   }
 };
 
+export const getTeamPublic = async (req, res) => {
+  const { id } = req.params;
+  const domain = req.query.domain;
+
+  try {
+    if (!domain) return res.status(400).json({ message: "Domain is required" });
+
+    const user = await User.findOne({ where: { domain } });
+    if (!user) return res.status(404).json({ message: "No user found for this domain" });
+
+    const team = await Team.findOne({
+      where: { id, userId: user.id },
+      attributes: ['id', 'name'],
+      include: [
+        {
+          model: Player,
+          as: 'players',
+          attributes: ['id', 'firstName'],
+          include: [
+            {
+              model: PlayerAttributeValue,
+              as: 'attributeValues',
+              attributes: ['value'],
+              include: [
+                {
+                  model: PlayerAttribute,
+                  as: 'attribute',
+                  attributes: ['attribute_name']
+                }
+              ]
+            }
+          ]
+        },
+        {
+          model: Game,
+          as: 'homeGames',
+          attributes: ['id', 'date', 'score_team1', 'score_team2'],
+          include: [
+            { model: Team, as: 'homeTeam', attributes: ['name'] },
+            { model: Team, as: 'awayTeam', attributes: ['name'] }
+          ]
+        },
+        {
+          model: Game,
+          as: 'awayGames',
+          attributes: ['id', 'date', 'score_team1', 'score_team2'],
+          include: [
+            { model: Team, as: 'homeTeam', attributes: ['name'] },
+            { model: Team, as: 'awayTeam', attributes: ['name'] }
+          ]
+        }
+      ]
+    });
+
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    const games = [...team.homeGames, ...team.awayGames].map((game) => ({
+      id: game.id,
+      date: game.date,
+      score_team1: game.score_team1,
+      score_team2: game.score_team2,
+      team1: game.homeTeam?.name || "Unknown",
+      team2: game.awayTeam?.name || "Unknown",
+    }));
+
+    res.status(200).json({
+      message: "Team fetched successfully",
+      team: {
+        id: team.id,
+        name: team.name,
+        players: team.players,
+        games,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching public team:", error);
+    res.status(500).json({ message: "Failed to fetch team" });
+  }
+};

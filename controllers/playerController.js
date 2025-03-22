@@ -357,3 +357,9 @@ const deleteImageFromS3 = async (imageUrl) => {
     console.error("Error deleting image from S3:", err);
   }
 };
+
+
+
+export const getPlayerList = async () => {
+  
+}
