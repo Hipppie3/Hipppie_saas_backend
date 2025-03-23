@@ -155,6 +155,7 @@ export const getGameById = async (req, res) => {
 
     // ✅ Get sportId from the user's first sport
     const sportId = user.sports[0].id;
+    const sport = user.sports[0];
 
     // ✅ Check if the game already has periodScores
     const existingScores = await GamePeriodScore.findAll({ where: { gameId: id } });
@@ -216,7 +217,7 @@ export const getGameById = async (req, res) => {
       ],
     });
 
-    res.status(200).json({ game: updatedGame, stats, playerStats });
+    res.status(200).json({ game: updatedGame, stats, playerStats, sport: {id: sport.id, name: sport.name} });
   } catch (error) {
     console.error("Error fetching game:", error);
     res.status(500).json({ error: error.message });
