@@ -250,7 +250,7 @@ try {
 
 
 
-
+// Public Frontend /teamList
 export const getLeagueListWithTeamsPublic = async (req, res) => {
   try {
     const domain = req.query.domain;
@@ -288,5 +288,41 @@ export const getLeagueListWithTeamsPublic = async (req, res) => {
   } catch (error) {
     console.error("Error fetching leagues with teams:", error);
     res.status(500).json({ message: "Failed to fetch league list" });
+  }
+};
+
+
+
+// Get Leagues in dashboard
+export const getLeagueSummary = async (req, res) => {
+  try {
+    const userId = req.session?.user?.id;
+    const isSuperAdmin = req.session?.user?.role === "super_admin";
+
+    let whereClause = {};
+    if (!isSuperAdmin && userId) {
+      whereClause.userId = userId;
+    }
+
+    const leagues = await League.findAll({
+      where: whereClause,
+      attributes: ['id', 'name'],
+      include: [{
+        model: Team,
+        as: 'teams',
+        attributes: [], // Don’t fetch team data
+      }],
+    });
+
+    const formatted = leagues.map(l => ({
+      id: l.id,
+      name: l.name,
+      teamsCount: l.teams?.length ?? 0,
+    }));
+
+    res.status(200).json({ leagues: formatted });
+  } catch (error) {
+    console.error("Error fetching summary:", error);
+    res.status(500).json({ message: "Failed to fetch league summary" });
   }
 };

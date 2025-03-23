@@ -1,5 +1,5 @@
 import express from 'express';
-import { createLeague, getLeagues, getLeagueById, updateLeague, deleteLeague, getLeagueListWithTeamsPublic,} from '../controllers/leagueController.js';
+import { createLeague, getLeagues, getLeagueById, updateLeague, deleteLeague, getLeagueListWithTeamsPublic, getLeagueSummary,} from '../controllers/leagueController.js';
 import { createTeam, } from '../controllers/teamController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 
@@ -7,6 +7,7 @@ const router = express.Router();
 
 
 router.get('/', getLeagues);
+router.get('/leaguesSummary', getLeagueSummary)
 router.get('/leaguesTeam', getLeagueListWithTeamsPublic)
 
 router.get('/:id', getLeagueById);
