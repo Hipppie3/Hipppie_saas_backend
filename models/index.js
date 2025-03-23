@@ -12,9 +12,18 @@ import GamePeriod from './gamePeriod.js';
 import GamePeriodScore from './gamePeriodScore.js'
 import PlayerAttribute from './playerAttribute.js';
 import PlayerAttributeValue from './playerAttributeValue.js';
+import Season from './season.js'; // Add this import
 
 
 
+
+// User has many Seasons
+User.hasMany(Season, { foreignKey: 'userId', as: 'seasons' });
+Season.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Optionally, Season has many Leagues
+Season.hasMany(League, { foreignKey: 'seasonId', as: 'leagues' });
+League.belongsTo(Season, { foreignKey: 'seasonId', as: 'season' });
 
 
 User.hasMany(PlayerAttribute, { foreignKey: 'user_id', as: 'playerAttributes' });
@@ -103,4 +112,4 @@ Team.hasMany(Game, { foreignKey: 'team2_id', as: 'awayGames' });
 Game.belongsTo(Team, { foreignKey: 'team2_id', as: 'awayTeam' });
 
 // ✅ Export models with explicit associations
-export { sequelize, User, League, Team, Player, Sport, Stat, Game, PlayerGameStat, GamePeriod, GamePeriodScore, PlayerAttribute, PlayerAttributeValue};
+export { sequelize, User, League, Team, Player, Sport, Stat, Game, PlayerGameStat, GamePeriod, GamePeriodScore, PlayerAttribute, PlayerAttributeValue, Season};

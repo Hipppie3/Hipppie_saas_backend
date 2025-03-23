@@ -211,24 +211,28 @@ league.games.forEach(game => {
 
 // Update League
 export const updateLeague = async (req, res) => {
-  const {name} = req.body
-  const {id} = req.params;
+  const { name, seasonId } = req.body; // Add seasonId here
+  const { id } = req.params;
 
   try {
     const league = await League.findByPk(id);
-    console.log(league)
     if (!league) {
-      return res.status(404).json({ message: "League not found"})
-    };
+      return res.status(404).json({ message: "League not found" });
+    }
+
+    // Update league name and seasonId
     await league.update({
       name: name || league.name,
-    })
-    res.status(200).json({ message: "League updated successfully", league})
+      seasonId: seasonId || league.seasonId, // Update seasonId if provided
+    });
+
+    res.status(200).json({ message: "League updated successfully", league });
   } catch (error) {
     console.error("Error updating league:", error);
-    res.status(500).json({ message: "Failed to update league" })
+    res.status(500).json({ message: "Failed to update league" });
   }
-}
+};
+
 
 
 // Delete League

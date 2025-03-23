@@ -1,4 +1,4 @@
-import { User, Sport } from '../models/index.js'
+import { User, Sport, Season, League, Team, Player, Stat, Game, PlayerGameStat, GamePeriod, GamePeriodScore, PlayerAttribute, PlayerAttributeValue } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
@@ -379,5 +379,203 @@ export const getDomain = async (req, res) => {
 
 
 
+// Get all Users with their associated data (seasons, sports, leagues, teams, players, game periods, stats, player attributes)
+export const getUsersWithAssociations = async (req, res) => {
+  const requestingUser = req.user;
+
+  // Only super admin can view all users with full associations
+  if (requestingUser.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Only super admin can view users' });
+  }
+
+  try {
+    const users = await User.findAll({
+      attributes: { exclude: ['password'] }, // Exclude password from response
+      include: [
+        {
+          model: Sport,
+          as: 'sports', // Alias from associations
+          attributes: ['id', 'name'],
+          through: { attributes: [] }, // Exclude extra join table fields
+        },
+        {
+          model: Season,
+          as: 'seasons',
+          include: [
+            {
+              model: League,
+              as: 'leagues',
+              include: [
+                {
+                  model: Team,
+                  as: 'teams',
+                  include: [
+                    {
+                      model: Player,
+                      as: 'players',
+                      attributes: ['id', 'username', 'teamId'],
+                      include: [
+                        {
+                          model: PlayerAttribute,
+                          as: 'playerAttributes', // Player Attributes
+                          include: [
+                            {
+                              model: PlayerAttributeValue,
+                              as: 'attributeValues', // Player Attribute Values
+                              attributes: ['id', 'value'],
+                            },
+                          ],
+                        },
+                        {
+                          model: PlayerGameStat,
+                          as: 'gameStats', // Player Stats
+                          include: [
+                            {
+                              model: Stat,
+                              as: 'stat',
+                              attributes: ['id', 'name'], // Example stat attributes
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  model: Game,
+                  as: 'games', // Game for the league
+                  include: [
+                    {
+                      model: GamePeriod,
+                      as: 'periods', // Game Periods
+                      include: [
+                        {
+                          model: GamePeriodScore,
+                          as: 'periodScores',
+                          attributes: ['score_team1', 'score_team2'],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
+    }
+
+    res.status(200).json({
+      message: 'Users fetched successfully with associations',
+      users: users,
+    });
+  } catch (error) {
+    console.error('Error fetching users with associations:', error);
+    res.status(500).json({ error: 'Failed to fetch users with associations' });
+  }
+};
 
 
+
+
+
+
+// Get User by ID with all their associated data
+
+export const getUserWithAssociationsById = async (req, res) => {
+  const { id } = req.params;
+  const requestingUser = req.user;
+
+  // Ensure the user can only view their own data or if they are an admin
+  if (requestingUser.role !== 'super_admin' && requestingUser.id !== Number(id)) {
+    return res.status(403).json({ error: 'You are not authorized to view this user' });
+  }
+
+  try {
+    const user = await User.findByPk(id, {
+      include: [
+        {
+          model: Sport,
+          as: 'sports', // Sports associated with the user
+          through: { attributes: [] }, // Exclude join table fields
+        },
+        {
+          model: Season,
+          as: 'seasons', // Seasons associated with the user
+          include: [
+            {
+              model: League,
+              as: 'leagues',
+              include: [
+                {
+                  model: Team,
+                  as: 'teams',
+                  include: [
+                    {
+                      model: Player,
+                      as: 'players',
+                      include: [
+                        {
+                          model: PlayerAttributeValue,
+                          as: 'attributeValues',
+                          include: [
+                            {
+                              model: PlayerAttribute,
+                              as: 'attribute',
+                            },
+                          ],
+                        },
+                        {
+                          model: PlayerGameStat,
+                          as: 'gameStats',
+                          include: [
+                            {
+                              model: Stat,
+                              as: 'stat',
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  model: Game,
+                  as: 'games',
+                  include: [
+                    {
+                      model: GamePeriod,
+                      as: 'periods',
+                      include: [
+                        {
+                          model: GamePeriodScore,
+                          as: 'periodScores',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'User fetched successfully with all associated data',
+      user,
+    });
+  } catch (error) {
+    console.error('Error fetching user by ID with associations:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+};
