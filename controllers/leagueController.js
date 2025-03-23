@@ -249,15 +249,44 @@ try {
 };
 
 
-export const getLeaguesTest = async (req, res) => {
+
+
+export const getLeagueListWithTeamsPublic = async (req, res) => {
   try {
+    const domain = req.query.domain;
+    const user = req.session?.user;
+    let whereClause = {};
+
+    // Super admin can access everything
+    if (user?.role === 'super_admin') {
+      // No whereClause = all leagues
+    } else if (user?.id) {
+      whereClause.userId = user.id;
+    } else if (domain) {
+      const owner = await User.findOne({ where: { domain } });
+      if (!owner) {
+        return res.status(404).json({ message: "No leagues found for this domain" });
+      }
+      whereClause.userId = owner.id;
+    } else {
+      return res.status(403).json({ message: "Unauthorized or no leagues available" });
+    }
+
     const leagues = await League.findAll({
-      attributes: ['id', 'name'], // ✅ Only fetching ID and name
+      where: whereClause,
+      attributes: ['id', 'name'],
+      include: [
+        {
+          model: Team,
+          as: 'teams',
+          attributes: ['id', 'name', 'wins', 'losses']
+        }
+      ]
     });
 
-    res.status(200).json({ message: "Leagues fetched successfully", leagues });
+    res.status(200).json({ leagues });
   } catch (error) {
-    console.error("Error fetching leagues:", error);
-    res.status(500).json({ message: "Failed to fetch leagues" });
+    console.error("Error fetching leagues with teams:", error);
+    res.status(500).json({ message: "Failed to fetch league list" });
   }
 };
