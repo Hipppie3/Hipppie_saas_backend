@@ -32,12 +32,15 @@ export const createTeam = async (req, res) => {
  }
 };
 
+
+
 // Get All Teams
 export const getTeams = async (req, res) => {
   try {
     let teams;
     const userId = req.session?.user?.id;
     const domain = req.query.domain;
+  console.log(domain)
     const isSuperAdmin = req.session?.user?.role === "super_admin";
     const includeOptions = [
       { model: League, as: "league" },
@@ -401,5 +404,50 @@ export const getTeamPublic = async (req, res) => {
   } catch (error) {
     console.error("Error fetching public team:", error);
     res.status(500).json({ message: "Failed to fetch team" });
+  }
+};
+
+
+
+
+
+
+
+export const getTeamListPublic = async (req, res) => {
+  try {
+    const user = req.session?.user;
+    const domain = req.query.domain;
+    let whereClause = {};
+    
+    if (user?.role === "super_admin") {
+      // No filter — return all teams
+    } else if (user?.id) {
+      whereClause.userId = user.id;
+    } else if (domain) {
+      const owner = await User.findOne({ where: { domain } });
+      if (!owner) {
+        return res.status(404).json({ message: "No teams found for this domain" });
+      }
+      whereClause.userId = owner.id;
+    } else {
+      return res.status(403).json({ message: "Unauthorized or no teams available" });
+    }
+
+    const teams = await Team.findAll({
+      where: whereClause,
+      attributes: ['id', 'name', 'wins', 'losses'],
+      include: [
+        {
+          model: League,
+          as: 'league',
+          attributes: ['id', 'name']
+        }
+      ]
+    });
+
+    res.status(200).json({ teams });
+  } catch (error) {
+    console.error("Error fetching teams:", error);
+    res.status(500).json({ message: "Failed to fetch teams" });
   }
 };

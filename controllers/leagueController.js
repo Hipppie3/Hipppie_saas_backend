@@ -35,7 +35,7 @@ export const getLeagues = async (req, res) => {
     const isSuperAdmin = req.session?.user?.role === "super_admin";
 
     let leagues = [];
-
+ 
     if (isSuperAdmin) {
       // Super admin can see all leagues
       leagues = await League.findAll({
