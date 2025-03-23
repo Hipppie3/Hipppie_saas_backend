@@ -1,9 +1,7 @@
 import express from 'express';
 import { 
   getUserWebsites, getDomain, registerUser, getUsers, loginUser, 
-  getUserById, updateUser, deleteUser, logoutUser, checkAuth, 
-  getUsersWithAssociations,
-  getUserWithAssociationsById
+  getUserById, updateUser, deleteUser, logoutUser, checkAuth 
 } from '../controllers/userController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 
@@ -12,8 +10,6 @@ const router = express.Router();
 // ✅ Public domain lookup routes (Moved to the top)
 router.get('/', getUserWebsites)
 router.get('/domain/:customDomain', getDomain); 
-router.get('/getUsersAssociation', authenticateSession, getUsersWithAssociations)
-router.get('/getUsersAssociation/:id', authenticateSession, getUserWithAssociationsById)
 
 // ✅ Authentication-related routes
 router.post('/register', registerUser);

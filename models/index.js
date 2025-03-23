@@ -16,6 +16,14 @@ import Season from './season.js'; // Add this import
 
 
 
+// Player has many PlayerAttributeValues
+Player.hasMany(PlayerAttributeValue, { foreignKey: 'player_id', as: 'attributeValues' });
+PlayerAttributeValue.belongsTo(Player, { foreignKey: 'player_id', as: 'player' });
+
+// PlayerAttribute has many PlayerAttributeValues
+PlayerAttribute.hasMany(PlayerAttributeValue, { foreignKey: 'attribute_id', as: 'values' });
+PlayerAttributeValue.belongsTo(PlayerAttribute, { foreignKey: 'attribute_id', as: 'attribute' });
+
 
 // User has many Seasons
 User.hasMany(Season, { foreignKey: 'userId', as: 'seasons' });
