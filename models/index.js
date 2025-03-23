@@ -38,13 +38,7 @@ User.hasMany(PlayerAttribute, { foreignKey: 'user_id', as: 'playerAttributes' })
 PlayerAttribute.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 
-// Player has many PlayerAttributeValues
-Player.hasMany(PlayerAttributeValue, { foreignKey: 'player_id', as: 'attributeValues' });
-PlayerAttributeValue.belongsTo(Player, { foreignKey: 'player_id', as: 'player' });
 
-// PlayerAttribute has many PlayerAttributeValues
-PlayerAttribute.hasMany(PlayerAttributeValue, { foreignKey: 'attribute_id', as: 'values' });
-PlayerAttributeValue.belongsTo(PlayerAttribute, { foreignKey: 'attribute_id', as: 'attribute' });
 
 
 // Each attribute value is tied to an attribute definition
