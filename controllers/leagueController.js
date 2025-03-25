@@ -5,8 +5,8 @@ import { Sequelize } from 'sequelize'
 export const createLeague = async (req, res) => {
   const { name, seasonId } = req.body;
 
-  if (!name || !seasonId) {
-    return res.status(400).json({ message: 'League name and seasonId are required' });
+  if (!name) {
+    return res.status(400).json({ message: 'League name required' });
   }
 
   try {
@@ -17,7 +17,7 @@ export const createLeague = async (req, res) => {
     const newLeague = await League.create({
       name,
       userId: req.user.id,
-      seasonId, // ✅ Store seasonId in the league
+      seasonId: seasonId || null, // ✅ Store seasonId in the league
     });
 
     res.status(200).json({
@@ -228,7 +228,7 @@ export const updateLeague = async (req, res) => {
     // Update league name and seasonId
     await league.update({
       name: name || league.name,
-      seasonId: seasonId || league.seasonId, // Update seasonId if provided
+      seasonId,
     });
 
     res.status(200).json({ message: "League updated successfully", league });

@@ -21,6 +21,7 @@ import playerGameStatRoutes from './routes/playerGameStatRoutes.js';
 import gamePeriodRoutes from './routes/gamePeriodRoutes.js';
 import PlayerAttributeRoutes from './routes/playerAttributeRoutes.js';
 import seasonRoutes from './routes/seasonRoutes.js';
+import viewModeRoutes from './routes/userPreferences.js';
 
 const app = express();
 const PORT = process.env.PORT || 5122;
@@ -59,6 +60,7 @@ app.use('/api/playerGameStats', playerGameStatRoutes);
 app.use('/api/gamePeriods', gamePeriodRoutes);
 app.use('/api/playerAttributes', PlayerAttributeRoutes)
 app.use('/api/seasons', seasonRoutes)
+app.use('/api/preferences', viewModeRoutes)
 
 app.get('/', (req, res) => {
   res.send("App is running!");
