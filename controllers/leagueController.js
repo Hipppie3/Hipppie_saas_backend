@@ -173,33 +173,22 @@ export const getLeagueById = async (req, res) => {
 
 league.games.forEach(game => {
   if (game.status === "completed") {
-    // Ensure team1 exists in teamsMap
-    if (teamsMap[game.team1_id]) {
-      if (game.score_team1 > game.score_team2) {
-        teamsMap[game.team1_id].wins++;
-        teamsMap[game.team2_id].losses++;
-      } else if (game.score_team2 > game.score_team1) {
-        teamsMap[game.team2_id].wins++;
-        teamsMap[game.team1_id].losses++;
-      }
-    } else {
-      console.error(`Team with ID ${game.team1_id} not found in teamsMap`);
-    }
+    const team1 = teamsMap[game.team1_id];
+    const team2 = teamsMap[game.team2_id];
 
-    // Ensure team2 exists in teamsMap
-    if (teamsMap[game.team2_id]) {
-      if (game.score_team2 > game.score_team1) {
-        teamsMap[game.team2_id].wins++;
-        teamsMap[game.team1_id].losses++;
-      } else if (game.score_team1 > game.score_team2) {
-        teamsMap[game.team1_id].wins++;
-        teamsMap[game.team2_id].losses++;
+    // Only count wins/losses if both teams are part of the league
+    if (team1 && team2) {
+      if (game.score_team1 > game.score_team2) {
+        team1.wins++;
+        team2.losses++;
+      } else if (game.score_team2 > game.score_team1) {
+        team2.wins++;
+        team1.losses++;
       }
-    } else {
-      console.error(`Team with ID ${game.team2_id} not found in teamsMap`);
     }
   }
 });
+
 
     // ✅ Replace teams array with recalculated data
     league.teams = Object.values(teamsMap);
