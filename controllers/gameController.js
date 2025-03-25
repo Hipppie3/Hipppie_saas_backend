@@ -6,7 +6,7 @@ import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePerio
 export const createGame = async (req, res) => {
   try {
     const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2,  video_url, location, time } = req.body;
-
+console.log(leagueId)
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No user session' });
     }
@@ -29,10 +29,19 @@ export const createGame = async (req, res) => {
       time
     });
 
-    // ✅ Step 2: Find Sport for the League
-    const sport = await Sport.findOne({ where: { id: leagueId } });
-    if (!sport) return res.status(400).json({ message: "Sport not found" });
 
+// ✅ Step 2: Find Sport for the user
+const user = await User.findByPk(req.user.id, {
+  include: [{ model: Sport, as: "sports", through: { attributes: [] } }]
+});
+
+const sport = user?.sports?.[0]; // First sport linked to the user
+
+if (!sport) {
+  return res.status(400).json({ message: "Sport not found for user" });
+}
+
+    console.log(sport)
     res.status(201).json(newGame);
   } catch (error) {
     console.error("Error creating game:", error);
