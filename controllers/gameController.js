@@ -111,6 +111,10 @@ export const getGames = async (req, res) => {
  else {
       return res.status(403).json({ message: "Unauthorized or no games available" });
     }
+games = games.map(game => ({
+  ...game.toJSON(),
+  date: game.date?.toISOString().slice(0, 10), // Format as YYYY-MM-DD
+}));
 
     res.status(200).json({
       message: games.length ? "Games fetched successfully" : "No games found",
