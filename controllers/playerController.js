@@ -77,34 +77,18 @@ export const getPlayers = async (req, res) => {
     const isSuperAdmin = req.session.user?.role === "super_admin";
 
     let players = [];
-    if (isSuperAdmin) {
-      players = await Player.findAll({
-        include: [
-          { model: League, as: "league", 
-            required: false
-          },
-          { model: Team, as: "team", required: false },
-          {
-            model: PlayerAttributeValue,
-            as: "attributeValues",
-            include: [{ model: PlayerAttribute, as: "attribute" }],
-          },
-        ],
-      });
-    } else if (domain) {
+
+    if (domain) {
+      // ✅ Public view with domain
       const user = await User.findOne({ where: { domain } });
       if (!user) {
         return res.status(404).json({ message: "No players found for this domain" });
       }
 
       players = await Player.findAll({
+        where: { userId: user.id }, // ✅ Top-level filter for domain user
         include: [
-          {
-            model: League,
-            as: "league",
-            required: false,
-            where: { userId: user.id },
-          },
+          { model: League, as: "league", required: false },
           { model: Team, as: "team", required: false },
           {
             model: PlayerAttributeValue,
@@ -113,15 +97,27 @@ export const getPlayers = async (req, res) => {
           },
         ],
       });
+
     } else if (userId) {
+      // ✅ Logged-in admin view
+      players = await Player.findAll({
+        where: { userId }, // ✅ Top-level filter for logged-in user
+        include: [
+          { model: League, as: "league", required: false },
+          { model: Team, as: "team", required: false },
+          {
+            model: PlayerAttributeValue,
+            as: "attributeValues",
+            include: [{ model: PlayerAttribute, as: "attribute" }],
+          },
+        ],
+      });
+
+    } else if (isSuperAdmin) {
+      // ✅ Super admin gets everything
       players = await Player.findAll({
         include: [
-          {
-            model: League,
-            as: "league",
-            required: false,
-            where: { userId },
-          },
+          { model: League, as: "league", required: false },
           { model: Team, as: "team", required: false },
           {
             model: PlayerAttributeValue,
@@ -130,21 +126,22 @@ export const getPlayers = async (req, res) => {
           },
         ],
       });
+
     } else {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    // Ensure player image is a string (URL) and not a Buffer
     const formattedPlayers = players.map((player) => ({
       ...player.toJSON(),
-      image: player.image ? player.image.toString() : null, // ✅ Convert Buffer to string
-      imageAvailable: !!player.image, // Indicates if the image exists
+      image: player.image ? player.image.toString() : null,
+      imageAvailable: !!player.image,
     }));
 
     res.status(200).json({
       message: formattedPlayers.length ? "Players fetched successfully" : "No players found",
       players: formattedPlayers,
     });
+
   } catch (error) {
     console.error("Error fetching players:", error);
     res.status(500).json({ message: "Failed to fetch players" });
@@ -159,88 +156,93 @@ export const getPlayers = async (req, res) => {
 export const getPlayerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const player = await Player.findByPk(id, {
-  include: [
-    { model: Team, as: "team" },
-    { model: League, as: "league" },
-    {
-      model: PlayerGameStat,
-      as: "gameStats",
+    const { domain } = req.query;
+    const sessionUserId = req.session.user?.id;
+    const isSuperAdmin = req.session.user?.role === "super_admin";
+
+    let userIdToMatch;
+
+    if (domain) {
+      const user = await User.findOne({ where: { domain } });
+      if (!user) return res.status(404).json({ message: "Invalid domain" });
+      userIdToMatch = user.id;
+    } else if (sessionUserId) {
+      userIdToMatch = sessionUserId;
+    }
+
+    // 🔐 SuperAdmin can bypass filter
+    const player = await Player.findOne({
+      where: isSuperAdmin ? { id } : { id, userId: userIdToMatch },
       include: [
-        { model: Stat, as: "stat" },
+        { model: Team, as: "team" },
+        { model: League, as: "league" },
         {
-          model: Game,
-          as: "game",
-          attributes: ["id", "date"],
+          model: PlayerGameStat,
+          as: "gameStats",
           include: [
-            { model: Team, as: "homeTeam", attributes: ["id", "name"] },
-            { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+            { model: Stat, as: "stat" },
+            {
+              model: Game,
+              as: "game",
+              attributes: ["id", "date"],
+              include: [
+                { model: Team, as: "homeTeam", attributes: ["id", "name"] },
+                { model: Team, as: "awayTeam", attributes: ["id", "name"] },
+              ],
+            },
           ],
         },
+        {
+          model: PlayerAttributeValue,
+          as: "attributeValues",
+          include: [{ model: PlayerAttribute, as: "attribute" }],
+        },
       ],
-    },
-    {
-      model: PlayerAttributeValue,
-      as: "attributeValues", // Ensure attribute values are fetched
-      include: [
-        { model: PlayerAttribute, as: "attribute" }, // Include PlayerAttribute to get attribute names
-      ],
-    },
-  ],
-});
-
-    if (!player) return res.status(404).json({ message: "Player not found" });
- // Fetch the default attributes (PA) for this user
- const userId = player.userId;
-    const defaultAttributes = await PlayerAttribute.findAll({
-      where: { user_id: userId },
     });
 
-    // Get the current attribute IDs that the player already has in PAV
+    if (!player) return res.status(404).json({ message: "Player not found" });
+
+    const defaultAttributes = await PlayerAttribute.findAll({
+      where: { user_id: player.userId },
+    });
+
     const playerAttributeIds = player.attributeValues.map(pav => pav.attribute_id);
 
-    // Check if any default PA attributes are missing in PAV for the player
     for (const attribute of defaultAttributes) {
       if (!playerAttributeIds.includes(attribute.id)) {
-        // If this PA is not associated with the player, create a missing PAV entry
         await PlayerAttributeValue.create({
           player_id: player.id,
-          attribute_id: attribute.id,  // Link the PA to the player
-          value: "",  // Default value, can be updated later
+          attribute_id: attribute.id,
+          value: "",
         });
-        console.log(`Created missing PAV for player ${player.id} and attribute ${attribute.attribute_name}`);
       }
     }
 
-    // ✅ Fetch userId from player
     const user = await User.findByPk(player.userId, {
       include: [{ model: Sport, as: "sports", through: { attributes: [] } }],
     });
 
-    // ✅ Set sportId to empty array if not found
-    const sportId = user?.sports?.length ? user.sports[0].id : [];
+    const sportId = user?.sports?.[0]?.id || [];
 
-    // ✅ Fetch all stats for the determined sportId
     const allStats = await Stat.findAll({
       where: { sportId, userId: player.userId },
     });
 
-    // ✅ Merge gameStats with allStats to ensure missing stats are set to 0
     const playerStats = await PlayerGameStat.findAll({
       where: { player_id: id },
       include: [{ model: Stat, as: "stat" }],
     });
 
-    // ✅ Ensure image is a string (URL) and not a Buffer
     res.status(200).json({
       message: "Player fetched successfully",
       player: {
         ...player.toJSON(),
-        image: player.image || null, // ✅ Safe check to avoid Buffer issues
+        image: player.image || null,
       },
       allStats,
       playerStats,
     });
+
   } catch (error) {
     console.error("Error fetching player:", error);
     res.status(500).json({ message: "Failed to fetch player" });
