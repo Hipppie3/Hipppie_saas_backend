@@ -8,7 +8,7 @@ export const registerUser = async (req, res) => {
   console.log
   const saltRounds = 10;
   try {
-    const normalizedDomain = domain ? domain.toLowerCase() : null;
+    const normalizedDomain = domain ? domain?.trim() : null;
     const normalizedEmail = email && email.trim() !== "" ? email.toLowerCase() : null;
     const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : null;
     const userNameExists = await User.findOne({ where: { username } });
