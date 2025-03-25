@@ -20,7 +20,7 @@ const Game = sequelize.define('game', {
     allowNull: true,
   },
   date: {
-    type: DataTypes.DATEONLY,
+    type: DataTypes.DATE,
     allowNull: true,
   },
   status: {
