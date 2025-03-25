@@ -4,31 +4,40 @@ import { Sequelize } from 'sequelize'
 
 // Create Team
 export const createTeam = async (req, res) => {
- const {name} = req.body;
- const {id} = req.params;
+ const { name, leagueId = null } = req.body;
+ const { id: paramLeagueId } = req.params;
+
+ const leagueIdToUse = paramLeagueId || leagueId;
+
  if (!name) {
-  return res.status(401).json({ message: 'Team name required' })
- };
+  return res.status(400).json({ message: 'Team name required' });
+ }
+
  try {
   if (!req.user || !req.user.id) {
    return res.status(401).json({ message: 'Unauthorized: No user session' });
-  };
-  const league = await League.findOne({ where: { id, userId: req.user.id }});
-  if (!league) {
-   return res.status(403).json({ message: "You don't have permission to add team to this league" })
   }
+
+  if (leagueIdToUse) {
+   const league = await League.findOne({ where: { id: leagueIdToUse, userId: req.user.id } });
+   if (!league) {
+    return res.status(403).json({ message: "You don't have permission to add team to this league" });
+   }
+  }
+
   const newTeam = await Team.create({
    name,
    userId: req.user.id,
-   leagueId: id,
+   leagueId: leagueIdToUse || null,
   });
+
   res.status(201).json({
    message: 'Team created successfully',
    team: newTeam
   });
  } catch (error) {
   console.error({ message: 'Error creating team:', error });
-  res.status(500).json({ message: 'Internal server error creating team' })
+  res.status(500).json({ message: 'Internal server error creating team' });
  }
 };
 

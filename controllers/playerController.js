@@ -13,10 +13,14 @@ export const createPlayer = async (req, res) => {
       return res.status(400).json({ message: "First name is required" });
     }
 
-    const team = await Team.findByPk(teamId);
-    if (!team) return res.status(404).json({ message: "Team not found" });
+let leagueId = null;
 
-    const leagueId = team.leagueId;
+if (teamId) {
+  const team = await Team.findByPk(teamId);
+  if (!team) return res.status(404).json({ message: "Team not found" });
+  leagueId = team.leagueId;
+}
+
 
     // ✅ Upload Image to S3 (if provided)
     let imageUrl = null;
@@ -76,8 +80,10 @@ export const getPlayers = async (req, res) => {
     if (isSuperAdmin) {
       players = await Player.findAll({
         include: [
-          { model: League, as: "league" },
-          { model: Team, as: "team" },
+          { model: League, as: "league", 
+            required: false
+          },
+          { model: Team, as: "team", required: false },
           {
             model: PlayerAttributeValue,
             as: "attributeValues",
@@ -96,9 +102,10 @@ export const getPlayers = async (req, res) => {
           {
             model: League,
             as: "league",
+            required: false,
             where: { userId: user.id },
           },
-          { model: Team, as: "team" },
+          { model: Team, as: "team", required: false },
           {
             model: PlayerAttributeValue,
             as: "attributeValues",
@@ -112,9 +119,10 @@ export const getPlayers = async (req, res) => {
           {
             model: League,
             as: "league",
+            required: false,
             where: { userId },
           },
-          { model: Team, as: "team" },
+          { model: Team, as: "team", required: false },
           {
             model: PlayerAttributeValue,
             as: "attributeValues",
@@ -248,16 +256,23 @@ export const updatePlayer = async (req, res) => {
     const { firstName, lastName, teamId, attributes } = req.body;
     const image = req.file ? req.file : null;
     const { id } = req.params;
-    
+    console.log(teamId)
     const player = await Player.findByPk(id);
     if (!player) return res.status(404).json({ message: "Player not found" });
 
-    if (teamId) {
-      const team = await Team.findByPk(teamId);
-      if (!team) return res.status(404).json({ message: "Team not found" });
-      player.teamId = teamId;
-      player.leagueId = team.leagueId;
-    }
+ let parsedTeamId = teamId === '' || teamId === undefined ? null : parseInt(teamId);
+
+if (parsedTeamId) {
+  const team = await Team.findByPk(parsedTeamId);
+  if (!team) return res.status(404).json({ message: "Team not found" });
+  player.teamId = parsedTeamId;
+  player.leagueId = team.leagueId;
+} else {
+  // Explicitly clear team and league if team is being removed
+  player.teamId = null;
+  player.leagueId = null;
+}
+
 
     // ✅ Update Player Fields
     player.firstName = firstName || player.firstName;

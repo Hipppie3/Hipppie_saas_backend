@@ -3,25 +3,30 @@ import { Sequelize } from 'sequelize'
 
 // Create League
 export const createLeague = async (req, res) => {
-  const {name} = req.body;
-  if (!name) {
-  return res.status(401).json({ message: 'League name required '})
-  };
+  const { name, seasonId } = req.body;
+
+  if (!name || !seasonId) {
+    return res.status(400).json({ message: 'League name and seasonId are required' });
+  }
+
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No user session' });
     }
+
     const newLeague = await League.create({
-    name,
-    userId: req.user.id,
+      name,
+      userId: req.user.id,
+      seasonId, // ✅ Store seasonId in the league
     });
+
     res.status(200).json({
-    message: 'League created successfully', 
-    league: newLeague
+      message: 'League created successfully',
+      league: newLeague
     });
   } catch (error) {
     console.error("Error creating league:", error);
-    res.status(500).json({ message: 'Internal server error creating league' })
+    res.status(500).json({ message: 'Internal server error creating league' });
   }
 };
 

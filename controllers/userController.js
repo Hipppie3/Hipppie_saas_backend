@@ -1,4 +1,4 @@
-import { User, Sport } from '../models/index.js'
+import { User, Sport, Season, League, Team, Player, Game } from '../models/index.js'
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
@@ -377,7 +377,23 @@ export const getDomain = async (req, res) => {
 
 
 
+export const getDashboardStats = async (req, res) => {
+  try {
+    const userId = req.session.user?.id;
+    console.log(userId)
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
+    const seasonCount = await Season.count({ where: { userId } });
+    const leagueCount = await League.count({ where: { userId } });
+    const teamCount = await Team.count({ where: { userId } });
+    const playerCount = await Player.count({ where: { userId } });
+    const gameCount = await Game.count({ where: { userId } });
 
-
-
+    res.json({ seasonCount, leagueCount, teamCount, playerCount, gameCount });
+  } catch (error) {
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

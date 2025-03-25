@@ -40,20 +40,23 @@ export const getSeasons = async (req, res) => {
 
 // Update Season
 export const updateSeason = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Get id from the URL params
   const { name, startDate, finishDate, isActive, isVisible } = req.body;
 
   try {
+    // Find the season by its ID
     const season = await Season.findByPk(id);
+
     if (!season) {
       return res.status(404).json({ message: "Season not found" });
     }
-    
+
     // Ensure the user can update this season
-    if (season.userId !== req.user.id) {
+    if (season.userId !== req.session?.user?.id) {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
+    // Update season fields, using the incoming data or fallback to existing values
     await season.update({
       name: name || season.name,
       startDate: startDate || season.startDate,
@@ -68,6 +71,7 @@ export const updateSeason = async (req, res) => {
     res.status(500).json({ message: "Failed to update season" });
   }
 };
+
 
 // Delete Season
 export const deleteSeason = async (req, res) => {
