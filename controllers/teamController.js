@@ -104,24 +104,29 @@ export const getTeams = async (req, res) => {
     }
     // Process each team to dynamically calculate wins, losses, and ties
     const processedTeams = teams.map((team) => {
-      const games = [...team.homeGames, ...team.awayGames].map((game) => ({
-        id: game.id,
-        date: game.date,
-        status: game.status,
-        score_team1: game.score_team1,
-        score_team2: game.score_team2,
-        team1: game.homeTeam ? game.homeTeam.name : "Unknown",
-        team2: game.awayTeam ? game.awayTeam.name : "Unknown",
-      }));
+ const games = [...team.homeGames, ...team.awayGames].map((game) => ({
+  id: game.id,
+  date: game.date,
+  status: game.status,
+  score_team1: game.score_team1,
+  score_team2: game.score_team2,
+  team1_id: game.team1_id,
+  team2_id: game.team2_id,
+}));
+
       let wins = 0, losses = 0, ties = 0;
-      games.forEach((game) => {
-        if (game.status === "completed") {
-          if (game.team1 === team.name && game.score_team1 > game.score_team2) wins++;
-          else if (game.team2 === team.name && game.score_team2 > game.score_team1) wins++;
-          else if (game.score_team1 === game.score_team2) ties++;
-          else losses++;
-        }
-      });
+  games.forEach((game) => {
+  if (game.status === "completed") {
+    const isHome = game.team1_id === team.id;
+    const isAway = game.team2_id === team.id;
+
+    if (isHome && game.score_team1 > game.score_team2) wins++;
+    else if (isAway && game.score_team2 > game.score_team1) wins++;
+    else if ((isHome || isAway) && game.score_team1 === game.score_team2) ties++;
+    else if (isHome || isAway) losses++;
+  }
+});
+
 
       return {
         id: team.id,
