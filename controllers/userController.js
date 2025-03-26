@@ -385,11 +385,19 @@ export const getDashboardStats = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const seasonCount = await Season.count({ where: { userId } });
-    const leagueCount = await League.count({ where: { userId } });
-    const teamCount = await Team.count({ where: { userId } });
-    const playerCount = await Player.count({ where: { userId } });
-    const gameCount = await Game.count({ where: { userId } });
+ const [
+  seasonCount,
+  leagueCount,
+  teamCount,
+  playerCount,
+  gameCount,
+] = await Promise.all([
+  Season.count({ where: { userId } }),
+  League.count({ where: { userId } }),
+  Team.count({ where: { userId } }),
+  Player.count({ where: { userId } }),
+  Game.count({ where: { userId } }),
+]);
 
     res.json({ seasonCount, leagueCount, teamCount, playerCount, gameCount });
   } catch (error) {
