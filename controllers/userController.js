@@ -8,7 +8,7 @@ export const registerUser = async (req, res) => {
   console.log
   const saltRounds = 10;
   try {
-    const normalizedDomain = domain ? domain?.trim() : null;
+const normalizedDomain = domain ? domain.trim().toLowerCase() : null;
     const normalizedEmail = email && email.trim() !== "" ? email.toLowerCase() : null;
     const hashedPassword = password ? await bcrypt.hash(password, saltRounds) : null;
     const userNameExists = await User.findOne({ where: { username } });
@@ -206,7 +206,8 @@ export const updateUser = async (req, res) => {
       username: username || user.username,
       password: removePassword ? null : hashedPassword, // ✅ Make sure this sets NULL when `removePassword` is true
       email: email ? email.trim() : null,  // If email is empty, set to null
-      domain: (requestingUser.role === 'super_admin' && domain && domain.trim() === "") ? null : user.domain,
+      domain: domain ? domain.trim().toLowerCase() : user.domain,
+
     });
 
     // Update sports if sportIds are provided
