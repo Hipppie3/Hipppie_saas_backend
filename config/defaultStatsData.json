@@ -1,20 +1,25 @@
 {
-  "Basketball": [
-    { "name": "Points", "shortName": "PTS" },
-    { "name": "Assists", "shortName": "AST" },
-    { "name": "Rebounds", "shortName": "REB" },
-    { "name": "Steals", "shortName": "STL" },
-    { "name": "Blocks", "shortName": "BLK" },
-    { "name": "Turnovers", "shortName": "TO" },
-    { "name": "Field Goals Made", "shortName": "FGM" },
-    { "name": "Field Goals Attempted", "shortName": "FGA" },
-    { "name": "Free Throws Made", "shortName": "FTM" },
-    { "name": "Free Throws Attempted", "shortName": "FTA" },
-    { "name": "Two-Pointers Made", "shortName": "2PM" },
-    { "name": "Two-Pointers Attempted", "shortName": "2PA" },
-    { "name": "Three-Pointers Made", "shortName": "3PM" },
-    { "name": "Three-Pointers Attempted", "shortName": "3PA" }
-  ],
+"Basketball": [
+  { "name": "Points", "shortName": "PTS" },
+  { "name": "Assists", "shortName": "AST" },
+  { "name": "Rebounds", "shortName": "REB" },
+  { "name": "Steals", "shortName": "STL" },
+  { "name": "Blocks", "shortName": "BLK" },
+  { "name": "Turnovers", "shortName": "TO" },
+  { "name": "Field Goals Made", "shortName": "FGM" },
+  { "name": "Field Goals Attempted", "shortName": "FGA" },
+  { "name": "FG%", "shortName": "FG%"},
+  { "name": "Free Throws Made", "shortName": "FTM" },
+  { "name": "Free Throws Attempted", "shortName": "FTA" },
+  { "name": "FT%", "shortName": "FT%" },
+  { "name": "Two-Pointers Made", "shortName": "2PM" },
+  { "name": "Two-Pointers Attempted", "shortName": "2PA" },
+  { "name": "2P%", "shortName": "2P%"},
+  { "name": "Three-Pointers Made", "shortName": "3PM" },
+  { "name": "Three-Pointers Attempted", "shortName": "3PA" },
+  { "name": "3P%", "shortName": "3P%" }
+],
+
   "Volleyball": [
     { "name": "Kills", "shortName": "K" },
     { "name": "Assists", "shortName": "AST" },
