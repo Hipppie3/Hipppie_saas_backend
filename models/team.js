@@ -2,38 +2,39 @@ import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
 const Team = sequelize.define('team', {
-name: {
-type: DataTypes.STRING,
-allowNull: false,
-unique: false,
-},
-userId: {
-  type: DataTypes.INTEGER,
-  allowNull: true,
-  references: {
-    model: "users",
-    key: "id",
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: false,
   },
-  onDelete: "SET NULL",
-},
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: "users",
+      key: "id",
+    },
+    onDelete: "SET NULL",
+  },
   leagueId: {
-  type: DataTypes.INTEGER,
-  allowNull: true,
-},
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
   wins: {
-  type: DataTypes.INTEGER,
-  defaultValue: 0,
-},
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   losses: {
-  type: DataTypes.INTEGER,
-  defaultValue: 0,
-},
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   ties: {
-  type: DataTypes.INTEGER,
-  defaultValue: 0,
-},
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
 }, {
-timestamps: true,
+  timestamps: true,
+  paranoid: true, // ✅ Enables soft delete
 });
 
 export default Team;

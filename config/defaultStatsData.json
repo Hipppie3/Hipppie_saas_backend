@@ -8,16 +8,16 @@
   { "name": "Turnovers", "shortName": "TO" },
   { "name": "Field Goals Made", "shortName": "FGM" },
   { "name": "Field Goals Attempted", "shortName": "FGA" },
-  { "name": "FG%", "shortName": "FG%"},
+  { "name": "Field Goals Percentage", "shortName": "FG%"},
   { "name": "Free Throws Made", "shortName": "FTM" },
   { "name": "Free Throws Attempted", "shortName": "FTA" },
-  { "name": "FT%", "shortName": "FT%" },
-  { "name": "Two-Pointers Made", "shortName": "2PM" },
-  { "name": "Two-Pointers Attempted", "shortName": "2PA" },
-  { "name": "2P%", "shortName": "2P%"},
-  { "name": "Three-Pointers Made", "shortName": "3PM" },
-  { "name": "Three-Pointers Attempted", "shortName": "3PA" },
-  { "name": "3P%", "shortName": "3P%" }
+  { "name": "Free Throws Percentage", "shortName": "FT%" },
+  { "name": "Two-Points Made", "shortName": "2PM" },
+  { "name": "Two-Points Attempted", "shortName": "2PA" },
+  { "name": "Two-Point Percentage", "shortName": "2P%"},
+  { "name": "Three-Points Made", "shortName": "3PM" },
+  { "name": "Three-Points Attempted", "shortName": "3PA" },
+  { "name": "Three-Points Percentage", "shortName": "3P%" }
 ],
 
   "Volleyball": [
