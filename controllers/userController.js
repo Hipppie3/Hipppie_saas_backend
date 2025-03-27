@@ -74,7 +74,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
     
-    req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role, domain: user.domain};
+    req.session.user = { id: user.id, username: user.username, email: user.email, role: user.role, domain: user.domain, theme: user.theme};
     res.status(200).json({ message: 'Login successful', user: req.session.user });
   } catch (error) {
     console.error('Error logging in:', error);
@@ -131,6 +131,7 @@ export const checkAuth = async (req, res) => {
         username: user.username,
         email: user.email,
         domain: user.domain,
+        theme: user.theme,
         sports: user.sports, // Include sports in the response
         ...(user.role === 'super_admin' && { role: user.role }), // Include role only if super_admin
       }
@@ -306,7 +307,7 @@ export const getUserById = async (req, res) => {
 
   try {
     const user = await User.findByPk(id, {
-      attributes: ['id', 'username', 'email', 'domain'], // Exclude password
+      attributes: ['id', 'username', 'email', 'domain', 'theme'], // Exclude password
     });
 
     if (!user) {
@@ -320,6 +321,7 @@ export const getUserById = async (req, res) => {
         username: user.username,
         email: user.email,
         domain: user.domain,
+        theme: user.theme,
       }
     });
   } catch (error) {
