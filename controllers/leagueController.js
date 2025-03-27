@@ -1,4 +1,4 @@
-import { League, Team, Player, User, Game } from '../models/index.js'
+import { League, Team, Player, User, Game, Season } from '../models/index.js'
 import { Sequelize } from 'sequelize'
 
 // Create League
@@ -278,7 +278,12 @@ export const getLeagueListWithTeamsPublic = async (req, res) => {
           model: Team,
           as: 'teams',
           attributes: ['id', 'name', 'wins', 'losses']
-        }
+        },
+      {
+        model: Season,
+        as: 'season',
+        attributes: ['id', 'name', 'isActive']
+      }
       ]
     });
 

@@ -305,7 +305,7 @@ const recalculateTeamRecords = async (teamId) => {
 export const updateGameDetails = async (req, res) => {
   try {
     const { id } = req.params;
-    const { video_url, location, time, status } = req.body;
+    const { video_url, location, time, status, date } = req.body;
 
     const game = await Game.findByPk(id);
     if (!game) return res.status(404).json({ error: "Game not found" });
@@ -315,7 +315,7 @@ export const updateGameDetails = async (req, res) => {
     game.location = location !== undefined ? location : game.location;
     game.time = time !== undefined ? time : game.time;
     game.status = status || game.status; // If no status provided, keep the old one
-
+    game.date = date !== undefined ? date : game.date;
     await game.save();
 
     res.status(200).json(game);
