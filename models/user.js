@@ -31,6 +31,11 @@ const User = sequelize.define('user', {
     allowNull: true,
     unique: true,
   },
+  theme: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'light'
+  }
 }, {
   timestamps: true, // Adds createdAt and updatedAt 
   // automatically

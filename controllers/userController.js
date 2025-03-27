@@ -53,7 +53,6 @@ res.status(201).json({
 export const loginUser = async (req, res) => {
 
   const { username, password, domain } = req.body;
-console.log('hi')
   try {
     const whereCondition = { username };
   if (domain !== undefined) {
@@ -149,7 +148,7 @@ export const checkAuth = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { username, oldPassword, newPassword, email, domain, removePassword, sportIds } = req.body;
+  const { username, oldPassword, newPassword, email, domain, removePassword, theme, sportIds } = req.body;
   const requestingUser = req.user;
 
   try {
@@ -207,6 +206,7 @@ export const updateUser = async (req, res) => {
       password: removePassword ? null : hashedPassword, // ✅ Make sure this sets NULL when `removePassword` is true
       email: email ? email.trim() : null,  // If email is empty, set to null
       domain: domain ? domain.trim().toLowerCase() : user.domain,
+      theme: theme ? theme : 'light',
 
     });
 
@@ -366,7 +366,7 @@ export const getDomain = async (req, res) => {
     console.log('Domain found:', user);
     res.status(200).json({ 
       message: 'Domain fetched successfully',
-      user: { id: user.id, username: user.username, email: user.email, domain: user.domain }
+      user: { id: user.id, username: user.username, email: user.email, domain: user.domain, theme: user.theme }
     });
   } catch (error) {
     console.error("Error finding user:", error);
