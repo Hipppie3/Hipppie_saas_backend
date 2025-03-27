@@ -262,23 +262,26 @@ export const updatePlayer = async (req, res) => {
     const player = await Player.findByPk(id);
     if (!player) return res.status(404).json({ message: "Player not found" });
 
- let parsedTeamId = teamId === '' || teamId === undefined ? null : parseInt(teamId);
+if ('teamId' in req.body) {
+  let parsedTeamId = teamId === '' || teamId === undefined ? null : parseInt(teamId);
 
-if (parsedTeamId) {
-  const team = await Team.findByPk(parsedTeamId);
-  if (!team) return res.status(404).json({ message: "Team not found" });
-  player.teamId = parsedTeamId;
-  player.leagueId = team.leagueId;
-} else {
-  // Explicitly clear team and league if team is being removed
-  player.teamId = null;
-  player.leagueId = null;
+  if (parsedTeamId) {
+    const team = await Team.findByPk(parsedTeamId);
+    if (!team) return res.status(404).json({ message: "Team not found" });
+    player.teamId = parsedTeamId;
+    player.leagueId = team.leagueId;
+  } else {
+    player.teamId = null;
+    player.leagueId = null;
+  }
 }
 
 
+
     // ✅ Update Player Fields
-    player.firstName = firstName || player.firstName;
-    player.lastName = lastName || player.lastName;
+if (firstName !== undefined) player.firstName = firstName;
+if (lastName !== undefined) player.lastName = lastName;
+
 
     // ✅ Upload Image (If New Image is Provided)
     if (image) {

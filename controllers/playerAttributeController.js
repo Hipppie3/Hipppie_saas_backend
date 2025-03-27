@@ -110,6 +110,7 @@ const normalizedName = name.replace(/\s+/g, "");
 
 // Hide/unhide a player attribute
 export const togglePlayerAttributeVisibility = async (req, res) => {
+  console.log('hi')
   try {
     const { id } = req.params;
     const { is_visible } = req.body;
