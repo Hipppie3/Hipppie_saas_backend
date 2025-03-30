@@ -1,11 +1,14 @@
 import express from 'express';
-import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule, updateGameDetails } from '../controllers/gameController.js';
+import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule, updateGameDetails, getGamesBySchedule } from '../controllers/gameController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 import { updatePeriodScores } from '../controllers/gamePeriodScoreController.js';
 
 const router = express.Router();
 
 router.get('/', getGames);
+// routes/gameRoutes.js
+router.get('/by-schedule', getGamesBySchedule);
+
 router.post('/', authenticateSession, createGame);
 router.post('/generate-schedule', generateLeagueSchedule);
 router.put('/gamePeriodScores', updatePeriodScores); // ✅ Route for updating period scores

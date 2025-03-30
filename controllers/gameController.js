@@ -435,3 +435,26 @@ export const generateLeagueSchedule = async (req, res) => {
   }
 };
 
+export const getGamesBySchedule = async (req, res) => {
+  try {
+    const { scheduleId } = req.query;
+    if (!scheduleId) {
+      return res.status(400).json({ message: "Missing scheduleId" });
+    }
+
+    const games = await Game.findAll({
+      where: { scheduleId },
+      include: [
+        { model: Team, as: 'homeTeam', attributes: ['id', 'name'] },
+        { model: Team, as: 'awayTeam', attributes: ['id', 'name'] },
+      ],
+      order: [['weekIndex', 'ASC'], ['time', 'ASC']],
+    });
+
+    res.status(200).json({ games });
+  } catch (error) {
+    console.error('Error fetching games by schedule:', error);
+    res.status(500).json({ message: 'Failed to fetch games' });
+  }
+};
+

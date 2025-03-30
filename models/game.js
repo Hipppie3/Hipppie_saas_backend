@@ -39,6 +39,14 @@ const Game = sequelize.define('game', {
     type: DataTypes.STRING,
     allow: true,
   },
+  scheduleId: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
+weekIndex: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
   location: {
     type: DataTypes.STRING,
     allowNull: true,
