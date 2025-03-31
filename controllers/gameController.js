@@ -437,13 +437,6 @@ export const generateLeagueSchedule = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
 export const getGamesBySchedule = async (req, res) => {
   try {
     const { scheduleId } = req.query;
@@ -469,23 +462,22 @@ export const getGamesBySchedule = async (req, res) => {
 
 
 
-export const generateWeeklyGames = async (req, res) => {
-  try {
-    const { scheduleId, weekIndex } = req.body;
-    if (!scheduleId || weekIndex === undefined) {
-      return res.status(400).json({ message: 'scheduleId and weekIndex are required' });
-    }
+const generateWeeklyGamesInternal = async ({ scheduleId, weekIndex }) => {
+ try {
+  if (!scheduleId || weekIndex === undefined) {
+    throw new Error('scheduleId and weekIndex are required');
+  }
 
-    const schedule = await Schedule.findByPk(scheduleId);
-    if (!schedule) {
-      return res.status(404).json({ message: 'Schedule not found' });
-    }
+  const schedule = await Schedule.findByPk(scheduleId);
+  if (!schedule) {
+    throw new Error('Schedule not found');
+  }
 
-    const leagueId = schedule.leagueId;
-    const teams = await Team.findAll({ where: { leagueId } });
-    if (teams.length < 2) {
-      return res.status(400).json({ message: 'Not enough teams to generate games' });
-    }
+  const leagueId = schedule.leagueId;
+  const teams = await Team.findAll({ where: { leagueId } });
+  if (teams.length < 2) {
+    throw new Error('Not enough teams to generate games');
+  }
 
     // Remove old games and byes for that week before generating new ones
     await Game.destroy({ where: { scheduleId, weekIndex } });
@@ -504,6 +496,21 @@ export const generateWeeklyGames = async (req, res) => {
     previousByes.forEach((bye) => {
       byeCounts[bye.teamId] = (byeCounts[bye.teamId] || 0) + 1;
     });
+// 1. Fetch all previous games in this schedule before the current week
+const pastGames = await Game.findAll({
+  where: {
+    scheduleId,
+    weekIndex: { [Op.lt]: weekIndex },
+  },
+});
+
+// 2. Build a matchup frequency map
+const matchupCounts = {};
+pastGames.forEach((game) => {
+  const [t1, t2] = [game.team1_id, game.team2_id].sort();
+  const key = `${t1}-${t2}`;
+  matchupCounts[key] = (matchupCounts[key] || 0) + 1;
+});
 
 
 
@@ -533,25 +540,76 @@ export const generateWeeklyGames = async (req, res) => {
       prioritizedTeams.push(...group);
     });
 
-    const pairings = [];
-    for (let i = 0; i < prioritizedTeams.length; i += 2) {
-      const team1 = prioritizedTeams[i];
-      const team2 = prioritizedTeams[i + 1];
-      pairings.push([team1, team2]);
-    }
 
     const timeSlots = schedule.timeSlots || [];
     const maxGames = timeSlots.length;
 
-    const gamesToPlay = pairings.slice(0, maxGames);
-    const leftoverPairs = pairings.slice(maxGames);
+const pairings = [];
+const used = new Set();
 
-    const byeTeamsThisWeek = leftoverPairs.flat().filter((t) => t);
+while (pairings.length < maxGames && prioritizedTeams.length >= 2) {
+  let bestPair = null;
+  let lowestCount = Infinity;
+
+  for (let i = 0; i < prioritizedTeams.length; i++) {
+    const team1 = prioritizedTeams[i];
+    if (used.has(team1.id)) continue;
+
+    for (let j = i + 1; j < prioritizedTeams.length; j++) {
+      const team2 = prioritizedTeams[j];
+      if (used.has(team2.id)) continue;
+
+      const [t1, t2] = [team1.id, team2.id].sort();
+      const key = `${t1}-${t2}`;
+      const count = matchupCounts[key] || 0;
+
+      if (count < lowestCount) {
+        bestPair = [team1, team2];
+        lowestCount = count;
+      }
+
+      if (count === 0) break; // can't get better than 0
+    }
+
+    if (bestPair && lowestCount === 0) break;
+  }
+
+  if (bestPair) {
+    const [team1, team2] = bestPair;
+    pairings.push([team1, team2]);
+    used.add(team1.id);
+    used.add(team2.id);
+  } else {
+    break; // no more valid pairs
+  }
+}
+// 🧠 1. Get previous week's byes
+let lastWeekByeIds = [];
+if (weekIndex > 0) {
+  const lastWeekByes = await Bye.findAll({
+    where: { scheduleId, weekIndex: weekIndex - 1 },
+  });
+  lastWeekByeIds = lastWeekByes.map((b) => b.teamId);
+}
+
+// 🧹 2. Filter out teams who had a bye last week
+const byeTeamsThisWeek = prioritizedTeams.filter(
+  (team) => !used.has(team.id) && !lastWeekByeIds.includes(team.id)
+);
+
+// 👀 Optional fallback: If all leftover teams had byes last week (rare), allow them
+if (byeTeamsThisWeek.length === 0) {
+  const allLeftover = prioritizedTeams.filter((team) => !used.has(team.id));
+  byeTeamsThisWeek.push(...allLeftover);
+}
+
+    console.log(byeTeamsThisWeek)
     if (!schedule.weeklyDates || !schedule.weeklyDates[weekIndex]) {
       return res.status(400).json({ message: 'Missing weekly date for this weekIndex' });
     }
 
     const gameDate = schedule.weeklyDates[weekIndex];
+const gamesToPlay = pairings;
 
     const games = gamesToPlay.map(([team1, team2], index) => ({
       scheduleId,
@@ -572,19 +630,55 @@ export const generateWeeklyGames = async (req, res) => {
         weekIndex,
         teamId: team.id,
       }));
+          console.log(byeEntries)
       await Bye.bulkCreate(byeEntries);
     }
 
-    res.status(201).json({
-      message: 'Weekly games generated successfully',
-      gamesCreated: games.length,
-      byesCreated: byeTeamsThisWeek.length,
-    });
+return {
+  message: 'Weekly games generated successfully',
+  gamesCreated: games.length,
+  byesCreated: byeTeamsThisWeek.length,
+};
+
   } catch (error) {
     console.error('Error generating weekly games:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+
+export const generateWeeklyGames = async (req, res) => {
+  try {
+    const { scheduleId, weekIndex } = req.body;
+    await generateWeeklyGamesInternal({ scheduleId, weekIndex });
+    res.status(201).json({ message: 'Weekly games generated successfully' });
+  } catch (error) {
+    console.error('Error generating weekly games:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+export const generateFullSchedule = async (req, res) => {
+  try {
+    const { scheduleId } = req.body;
+    const schedule = await Schedule.findByPk(scheduleId);
+    if (!schedule || !schedule.numWeeks) {
+      return res.status(404).json({ message: 'Schedule not found or missing numWeeks' });
+    }
+
+    for (let weekIndex = 0; weekIndex < schedule.numWeeks; weekIndex++) {
+      await generateWeeklyGamesInternal({ scheduleId, weekIndex });
+    }
+
+    res.status(201).json({ message: 'Full schedule generated successfully' });
+  } catch (error) {
+    console.error('Error generating full schedule:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 
 
@@ -631,3 +725,4 @@ export const getWeeklyByes = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
