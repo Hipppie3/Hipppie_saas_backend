@@ -25,11 +25,9 @@ import viewModeRoutes from './routes/userPreferences.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 
 const app = express();
+app.set('trust proxy', 1); // 🔥 This is required when using secure cookies behind a proxy (Netlify/Heroku)
+
 const PORT = process.env.PORT || 5122;
-
-
-
-import cors from 'cors';
 
 // ✅ Allowed origins
 const allowedOrigins = [
