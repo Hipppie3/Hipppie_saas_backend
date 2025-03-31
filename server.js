@@ -29,7 +29,9 @@ const PORT = process.env.PORT || 5122;
 
 
 
-// ✅ Apply Middleware
+import cors from 'cors';
+
+// ✅ Allowed origins
 const allowedOrigins = [
   "http://localhost:5173",
   "https://sportinghip.netlify.app",
@@ -37,18 +39,23 @@ const allowedOrigins = [
   "https://www.sportinghip.com"
 ];
 
+// ✅ CORS middleware
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
 
+// ✅ Preflight handler
+app.options('*', cors());
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
-);
+
+
 
 // ✅ Connect to Database BEFORE setting up session
 await connectDb();
