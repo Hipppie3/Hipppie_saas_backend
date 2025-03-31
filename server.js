@@ -26,6 +26,7 @@ import scheduleRoutes from './routes/scheduleRoutes.js';
 
 const app = express();
 app.set('trust proxy', 1); // 🔥 This is required when using secure cookies behind a proxy (Netlify/Heroku)
+app.use(express.json()); // 🔥 Required to parse JSON POST bodies
 
 const PORT = process.env.PORT || 5122;
 
