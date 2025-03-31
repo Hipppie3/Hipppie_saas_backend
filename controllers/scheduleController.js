@@ -14,6 +14,17 @@ export const createSchedule = async (req, res) => {
     if (!sameSlot && !weeklyTimeSlots) {
       return res.status(400).json({ message: 'Weekly time slots must be provided when sameSlot is false.' });
     }
+// Auto-generate weeklyDates if not provided
+let finalWeeklyDates = weeklyDates;
+if (!weeklyDates || !Array.isArray(weeklyDates) || weeklyDates.length === 0) {
+  const baseDate = new Date(startDate);
+  finalWeeklyDates = Array.from({ length: numWeeks }, (_, i) => {
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + i * 7);
+    date.setUTCHours(12, 0, 0, 0); // lock to noon UTC
+    return date.toISOString();
+  });
+}
 
     // Create the schedule in the database
     const schedule = await Schedule.create({
@@ -23,7 +34,7 @@ export const createSchedule = async (req, res) => {
       numWeeks,
       gameDays,
       sameSlot,
-      weeklyDates,
+      weeklyDates: finalWeeklyDates,
       timeSlots: sameSlot ? timeSlots : null,
       weeklyTimeSlots: !sameSlot ? weeklyTimeSlots : null,
     });

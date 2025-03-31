@@ -1,4 +1,6 @@
-import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore, Schedule } from '../models/index.js';
+import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore, Schedule, Bye} from '../models/index.js';
+
+import { Op } from 'sequelize';
 
 
 
@@ -468,81 +470,121 @@ export const getGamesBySchedule = async (req, res) => {
 
 
 export const generateWeeklyGames = async (req, res) => {
-      console.log('hi')
   try {
-
     const { scheduleId, weekIndex } = req.body;
     if (!scheduleId || weekIndex === undefined) {
       return res.status(400).json({ message: 'scheduleId and weekIndex are required' });
     }
-// scheduleId and weekIndex to know which schedule and what week inside the schedule to generate the games
+
     const schedule = await Schedule.findByPk(scheduleId);
     if (!schedule) {
       return res.status(404).json({ message: 'Schedule not found' });
     }
+
     const leagueId = schedule.leagueId;
-    const teams = await Team.findAll({
-  where: { leagueId },
-});
-if (teams.length < 2) {
-  return res.status(400).json({ message: 'Not enough teams to generate games' });
-}
-// find the league for that schedule and the teams to shuffle 
-// Remove old games for that week before generating new ones
-await Game.destroy({
-  where: {
-    scheduleId,
-    weekIndex,
-  },
-});
+    const teams = await Team.findAll({ where: { leagueId } });
+    if (teams.length < 2) {
+      return res.status(400).json({ message: 'Not enough teams to generate games' });
+    }
 
-const shuffledTeams = [...teams];
-for (let i = shuffledTeams.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [shuffledTeams[i], shuffledTeams[j]] = [shuffledTeams[j], shuffledTeams[i]];
-}
-const pairings = [];
-for (let i = 0; i < shuffledTeams.length; i += 2) {
-  const team1 = shuffledTeams[i];
-  const team2 = shuffledTeams[i + 1]; // could be undefined
-  pairings.push([team1, team2]);
-}
+    // Remove old games and byes for that week before generating new ones
+    await Game.destroy({ where: { scheduleId, weekIndex } });
+    await Bye.destroy({ where: { scheduleId, weekIndex } });
 
-const timeSlots = schedule.timeSlots || [];
-const maxGames = timeSlots.length;
+    // Fetch all previous byes before the current week
+    const previousByes = await Bye.findAll({
+      where: {
+        scheduleId,
+        weekIndex: { [Op.lt]: weekIndex },
+      },
+    });
 
-const gamesToPlay = pairings.slice(0, maxGames); // only create as many games as slots
-const leftoverPairs = pairings.slice(maxGames); // these are byes or unplayed
-
-const gameDate = schedule.weeklyDates[weekIndex];
-
-const games = gamesToPlay.map(([team1, team2], index) => ({
-  scheduleId,
-  leagueId,
-  weekIndex,
-  team1_id: team1.id,
-  team2_id: team2?.id || null, // handle possible bye, though shouldn't happen here
-  date: gameDate,
-  time: timeSlots[index],
-  status: 'scheduled',
-}));
-
-await Game.bulkCreate(games);
-
-res.status(201).json({
-  message: 'Weekly games generated successfully',
-  gamesCreated: games.length,
-});
+    // Count how many byes each team has had
+    const byeCounts = {};
+    previousByes.forEach((bye) => {
+      byeCounts[bye.teamId] = (byeCounts[bye.teamId] || 0) + 1;
+    });
 
 
-    // Ready for next step: get teams
+
+    // Group teams by bye count
+    const teamsByByeCount = {};
+    teams.forEach((team) => {
+      const count = byeCounts[team.id] || 0;
+      if (!teamsByByeCount[count]) teamsByByeCount[count] = [];
+      teamsByByeCount[count].push(team);
+    });
+
+    // Shuffle teams within each bye group
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    };
+
+    const sortedByeCounts = Object.keys(teamsByByeCount).map(Number).sort((a, b) => b - a);
+    const prioritizedTeams = [];
+
+
+    sortedByeCounts.forEach((count) => {
+      const group = teamsByByeCount[count];
+      shuffle(group);
+      prioritizedTeams.push(...group);
+    });
+
+    const pairings = [];
+    for (let i = 0; i < prioritizedTeams.length; i += 2) {
+      const team1 = prioritizedTeams[i];
+      const team2 = prioritizedTeams[i + 1];
+      pairings.push([team1, team2]);
+    }
+
+    const timeSlots = schedule.timeSlots || [];
+    const maxGames = timeSlots.length;
+
+    const gamesToPlay = pairings.slice(0, maxGames);
+    const leftoverPairs = pairings.slice(maxGames);
+
+    const byeTeamsThisWeek = leftoverPairs.flat().filter((t) => t);
+    if (!schedule.weeklyDates || !schedule.weeklyDates[weekIndex]) {
+      return res.status(400).json({ message: 'Missing weekly date for this weekIndex' });
+    }
+
+    const gameDate = schedule.weeklyDates[weekIndex];
+
+    const games = gamesToPlay.map(([team1, team2], index) => ({
+      scheduleId,
+      leagueId,
+      weekIndex,
+      team1_id: team1.id,
+      team2_id: team2?.id || null,
+      date: gameDate,
+      time: timeSlots[index],
+      status: 'scheduled',
+    }));
+
+    await Game.bulkCreate(games);
+
+    if (byeTeamsThisWeek.length) {
+      const byeEntries = byeTeamsThisWeek.map((team) => ({
+        scheduleId,
+        weekIndex,
+        teamId: team.id,
+      }));
+      await Bye.bulkCreate(byeEntries);
+    }
+
+    res.status(201).json({
+      message: 'Weekly games generated successfully',
+      gamesCreated: games.length,
+      byesCreated: byeTeamsThisWeek.length,
+    });
   } catch (error) {
     console.error('Error generating weekly games:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-
 
 
 
@@ -571,3 +613,21 @@ export const getWeeklyGames = async (req, res) => {
   }
 };
 
+// controllers/gameController.js
+export const getWeeklyByes = async (req, res) => {
+  try {
+    const { scheduleId, weekIndex } = req.query;
+    if (!scheduleId || weekIndex === undefined) {
+      return res.status(400).json({ message: 'scheduleId and weekIndex are required' });
+    }
+
+    const byes = await Bye.findAll({
+      where: { scheduleId, weekIndex },
+    });
+
+    res.status(200).json({ byes });
+  } catch (error) {
+    console.error('Error fetching byes:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
