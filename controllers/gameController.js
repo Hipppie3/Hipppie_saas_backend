@@ -1,4 +1,4 @@
-import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore } from '../models/index.js';
+import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore, Schedule } from '../models/index.js';
 
 
 
@@ -435,6 +435,13 @@ export const generateLeagueSchedule = async (req, res) => {
   }
 };
 
+
+
+
+
+
+
+
 export const getGamesBySchedule = async (req, res) => {
   try {
     const { scheduleId } = req.query;
@@ -455,6 +462,112 @@ export const getGamesBySchedule = async (req, res) => {
   } catch (error) {
     console.error('Error fetching games by schedule:', error);
     res.status(500).json({ message: 'Failed to fetch games' });
+  }
+};
+
+
+
+export const generateWeeklyGames = async (req, res) => {
+      console.log('hi')
+  try {
+
+    const { scheduleId, weekIndex } = req.body;
+    if (!scheduleId || weekIndex === undefined) {
+      return res.status(400).json({ message: 'scheduleId and weekIndex are required' });
+    }
+// scheduleId and weekIndex to know which schedule and what week inside the schedule to generate the games
+    const schedule = await Schedule.findByPk(scheduleId);
+    if (!schedule) {
+      return res.status(404).json({ message: 'Schedule not found' });
+    }
+    const leagueId = schedule.leagueId;
+    const teams = await Team.findAll({
+  where: { leagueId },
+});
+if (teams.length < 2) {
+  return res.status(400).json({ message: 'Not enough teams to generate games' });
+}
+// find the league for that schedule and the teams to shuffle 
+// Remove old games for that week before generating new ones
+await Game.destroy({
+  where: {
+    scheduleId,
+    weekIndex,
+  },
+});
+
+const shuffledTeams = [...teams];
+for (let i = shuffledTeams.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [shuffledTeams[i], shuffledTeams[j]] = [shuffledTeams[j], shuffledTeams[i]];
+}
+const pairings = [];
+for (let i = 0; i < shuffledTeams.length; i += 2) {
+  const team1 = shuffledTeams[i];
+  const team2 = shuffledTeams[i + 1]; // could be undefined
+  pairings.push([team1, team2]);
+}
+
+const timeSlots = schedule.timeSlots || [];
+const maxGames = timeSlots.length;
+
+const gamesToPlay = pairings.slice(0, maxGames); // only create as many games as slots
+const leftoverPairs = pairings.slice(maxGames); // these are byes or unplayed
+
+const gameDate = schedule.weeklyDates[weekIndex];
+
+const games = gamesToPlay.map(([team1, team2], index) => ({
+  scheduleId,
+  leagueId,
+  weekIndex,
+  team1_id: team1.id,
+  team2_id: team2?.id || null, // handle possible bye, though shouldn't happen here
+  date: gameDate,
+  time: timeSlots[index],
+  status: 'scheduled',
+}));
+
+await Game.bulkCreate(games);
+
+res.status(201).json({
+  message: 'Weekly games generated successfully',
+  gamesCreated: games.length,
+});
+
+
+    // Ready for next step: get teams
+  } catch (error) {
+    console.error('Error generating weekly games:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+
+
+
+
+export const getWeeklyGames = async (req, res) => {
+  try {
+    const { scheduleId, weekIndex } = req.query;
+
+    if (!scheduleId || weekIndex === undefined) {
+      return res.status(400).json({ message: 'scheduleId and weekIndex are required' });
+    }
+
+    const games = await Game.findAll({
+      where: {
+        scheduleId,
+        weekIndex,
+      },
+    });
+
+    res.status(200).json({ games });
+  } catch (error) {
+    console.error('Error fetching weekly games:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
