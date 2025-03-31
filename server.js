@@ -30,11 +30,18 @@ const PORT = process.env.PORT || 5122;
 
 
 // ✅ Apply Middleware
-app.use(express.json());
 const allowedOrigins = [
-  "http://localhost:5173", 
-  "https://hipppieleague.netlify.app" // ✅ Add "https://"
+  "http://localhost:5173",
+  "https://sportinghip.netlify.app",
+  "https://sportinghip.com",
+  "https://www.sportinghip.com"
 ];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 
 app.use(
   cors({

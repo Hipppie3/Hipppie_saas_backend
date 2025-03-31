@@ -424,3 +424,20 @@ export const getTeamPublic = async (req, res) => {
 
 
 
+// backend: controllers/teamController.js
+export const getTeamsByLeague = async (req, res) => {
+  try {
+    const { leagueId } = req.query;
+
+    const whereClause = leagueId ? { leagueId } : {};
+
+    const teams = await Team.findAll({
+      where: whereClause,
+    });
+
+    res.status(200).json({ teams });
+  } catch (err) {
+    console.error('Error fetching teams:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
