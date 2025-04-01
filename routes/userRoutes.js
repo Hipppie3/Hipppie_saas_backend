@@ -1,7 +1,8 @@
 import express from 'express';
 import { 
   getUserWebsites, getDomain, registerUser, getUsers, loginUser, 
-  getUserById, updateUser, deleteUser, logoutUser, checkAuth, getDashboardStats 
+  getUserById, updateUser, deleteUser, logoutUser, checkAuth, getDashboardStats, 
+  getUserBySlug
 } from '../controllers/userController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 
@@ -11,6 +12,7 @@ const router = express.Router();
 router.get('/', getUserWebsites)
 router.get('/domain/:customDomain', getDomain); 
 router.get('/dashboardStats', authenticateSession, getDashboardStats);
+router.get("/slug/:slug", getUserBySlug);
 
 // ✅ Authentication-related routes
 router.post('/register', registerUser);

@@ -31,6 +31,14 @@ const User = sequelize.define('user', {
     allowNull: true,
     unique: true,
   },
+  slug: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+    validate: {
+    is: /^[a-z0-9\-]+$/i, // optional: make it URL-safe
+  },
+  },
   theme: {
     type: DataTypes.STRING,
     allowNull: false,
