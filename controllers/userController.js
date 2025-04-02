@@ -146,12 +146,12 @@ export const logoutUser = async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not logged in' });
   }
-  const {domain} = req.session.user;
+  const {domain, slug} = req.session.user;
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ message: 'Logout failed' });
     }
-    res.clearCookie('connect.sid').status(200).json({ message: 'Logged out successfully', domain });
+    res.clearCookie('connect.sid').status(200).json({ message: 'Logged out successfully', domain, slug});
   });
 };
 
