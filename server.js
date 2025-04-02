@@ -35,7 +35,9 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://sportinghip.netlify.app",
   "https://sportinghip.com",
-  "https://www.sportinghip.com"
+  "https://www.sportinghip.com",
+  "https://hipppie3.com", // ✅ add this
+  "https://www.hipppie3.com" // ✅ add this too (just in case)
 ];
 
 // ✅ CORS middleware
