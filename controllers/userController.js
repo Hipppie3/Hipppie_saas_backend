@@ -70,14 +70,17 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { username, password, domain, slug } = req.body;
 
-  try {
-    const whereCondition = { username };
+try {
+  const whereCondition = { username };
+  const domainFromHost = req.hostname?.toLowerCase();
 
-    if (domain !== undefined) {
-      whereCondition.domain = domain;
-    } else if (slug !== undefined) {
-      whereCondition.slug = slug;
-    }
+  if (domain !== undefined) {
+    whereCondition.domain = domain;
+  } else if (slug !== undefined) {
+    whereCondition.slug = slug;
+  } else {
+    whereCondition.domain = domainFromHost;
+  }
 
     const user = await User.findOne({ where: whereCondition });
 
