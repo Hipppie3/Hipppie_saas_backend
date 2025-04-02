@@ -74,13 +74,18 @@ try {
   const whereCondition = { username };
   const domainFromHost = req.hostname?.toLowerCase();
 
-  if (domain !== undefined) {
-    whereCondition.domain = domain;
-  } else if (slug !== undefined) {
-    whereCondition.slug = slug;
-  } else {
-    whereCondition.domain = domainFromHost;
-  }
+if (domain !== undefined) {
+  whereCondition.domain = domain;
+} else if (slug !== undefined) {
+  whereCondition.slug = slug;
+} else {
+  // Allow fallback for super_admin logins with no domain
+  whereCondition[Op.or] = [
+    { domain: domainFromHost },
+    { domain: null }
+  ];
+}
+
 
     const user = await User.findOne({ where: whereCondition });
 
