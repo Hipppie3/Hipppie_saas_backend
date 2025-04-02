@@ -445,7 +445,7 @@ export const getUserWebsites = async (req, res) => {
 
 
 
-// Test Custom Domain
+
 // Test Custom Domain
 export const getDomain = async (req, res) => {
   console.log('Incoming domain request:', req.params.customDomain);

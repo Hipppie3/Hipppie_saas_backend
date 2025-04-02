@@ -251,22 +251,36 @@ try {
 // Public Frontend /teamList
 export const getLeagueListWithTeamsPublic = async (req, res) => {
   try {
-    const domain = req.query.domain;
+    const { domain, slug } = req.query;
     const user = req.session?.user;
     let whereClause = {};
 
-    // Super admin can access everything
+    // 1. Super admin can access everything
     if (user?.role === 'super_admin') {
-      // No whereClause = all leagues
-    } else if (user?.id) {
+      // No whereClause = return all leagues
+    } 
+    // 2. Logged-in user
+    else if (user?.id) {
       whereClause.userId = user.id;
-    } else if (domain) {
-      const owner = await User.findOne({ where: { domain } });
+    } 
+    // 3. If slug provided
+    else if (slug) {
+      const owner = await User.findOne({ where: { slug } });
+      if (!owner) {
+        return res.status(404).json({ message: "No leagues found for this slug" });
+      }
+      whereClause.userId = owner.id;
+    } 
+    // 4. If domain provided
+    else if (domain) {
+      const normalizedDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
+      const owner = await User.findOne({ where: { domain: normalizedDomain } });
       if (!owner) {
         return res.status(404).json({ message: "No leagues found for this domain" });
       }
       whereClause.userId = owner.id;
-    } else {
+    } 
+    else {
       return res.status(403).json({ message: "Unauthorized or no leagues available" });
     }
 
@@ -279,11 +293,11 @@ export const getLeagueListWithTeamsPublic = async (req, res) => {
           as: 'teams',
           attributes: ['id', 'name', 'wins', 'losses']
         },
-      {
-        model: Season,
-        as: 'season',
-        attributes: ['id', 'name', 'isActive']
-      }
+        {
+          model: Season,
+          as: 'season',
+          attributes: ['id', 'name', 'isActive']
+        }
       ]
     });
 
