@@ -70,7 +70,7 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   const { username, password, domain, slug } = req.body;
-
+  console.log(username, password, slug)
   try {
     const whereCondition = { username };
     let domainFromHost = req.hostname?.toLowerCase();
