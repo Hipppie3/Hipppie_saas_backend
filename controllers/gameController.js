@@ -57,7 +57,7 @@ export const getGames = async (req, res) => {
   console.log("Fetching games");
 
   try {
-    const { domain } = req.query;
+    const { domain, slug } = req.query;
     const userId = req.session?.user?.id;
     const isSuperAdmin = req.session?.user?.role === "super_admin";
 
@@ -69,11 +69,9 @@ export const getGames = async (req, res) => {
     let games = [];
 
     if (isSuperAdmin) {
-      // ✅ Super Admin: Get all games
       games = await Game.findAll({ include: includeOptions });
 
     } else if (userId) {
-      // ✅ Authenticated User: Fetch games from leagues they are part of
       const user = await User.findByPk(userId, {
         include: [{ model: League, as: "leagues", attributes: ["id"] }],
       });
@@ -89,28 +87,28 @@ export const getGames = async (req, res) => {
         order: [["date", "ASC"]],
       });
 
-} else if (domain) {
-  // ✅ Step 1: Find the user who owns this domain
-  const user = await User.findOne({ where: { domain } }); 
-  if (!user) {
-    return res.status(404).json({ message: "No games found for this domain" });
-  }
+    } else if (domain || slug) {
+      const user = await User.findOne({
+        where: domain ? { domain } : { slug },
+      });
 
-  // ✅ Step 2: Find leagues that belong to this user
-  const leagues = await League.findAll({ where: { userId: user.id } });
-  if (!leagues.length) {
-    return res.status(404).json({ message: "No leagues found for this domain" });
-  }
+      if (!user) {
+        return res.status(404).json({ message: "No games found for this domain or slug" });
+      }
 
-  // ✅ Step 3: Get games for these leagues
-  const leagueIds = leagues.map(league => league.id);
-  games = await Game.findAll({
-    where: { leagueId: leagueIds }, // Fetch games for all leagues of the user
-    include: includeOptions,
-    order: [["date", "ASC"]],
-  });
-}
- else {
+      const leagues = await League.findAll({ where: { userId: user.id } });
+      if (!leagues.length) {
+        return res.status(404).json({ message: "No leagues found for this user" });
+      }
+
+      const leagueIds = leagues.map((league) => league.id);
+      games = await Game.findAll({
+        where: { leagueId: leagueIds },
+        include: includeOptions,
+        order: [["date", "ASC"]],
+      });
+
+    } else {
       return res.status(403).json({ message: "Unauthorized or no games available" });
     }
 
