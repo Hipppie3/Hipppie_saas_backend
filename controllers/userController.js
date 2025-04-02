@@ -446,12 +446,21 @@ export const getUserWebsites = async (req, res) => {
 
 
 // Test Custom Domain
+// Test Custom Domain
 export const getDomain = async (req, res) => {
   console.log('Incoming domain request:', req.params.customDomain);
+  
+  // Normalize the domain by removing "www" if present
   let customDomain = req.params.customDomain.toLowerCase();
+  if (customDomain.startsWith('www.')) {
+    customDomain = customDomain.slice(4); // Remove 'www.'
+  }
+  
+  // Ensure domain ends with '.com' or '.net'
   if (!customDomain.endsWith('.com') && !customDomain.endsWith('.net')) {
     customDomain += '.com';
   }
+  
   try {
     console.log('Looking for domain:', customDomain);
     const user = await User.findOne({ where: { domain: customDomain } });
@@ -469,6 +478,7 @@ export const getDomain = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 // GET /api/users/slug/:slug
 export const getUserBySlug = async (req, res) => {
