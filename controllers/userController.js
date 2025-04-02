@@ -67,32 +67,43 @@ export const registerUser = async (req, res) => {
 
 
 //Login User
+
 export const loginUser = async (req, res) => {
   const { username, password, domain, slug } = req.body;
 
-try {
-  const whereCondition = { username };
-  const domainFromHost = req.hostname?.toLowerCase();
+  try {
+    const whereCondition = { username };
+    let domainFromHost = req.hostname?.toLowerCase();
 
-if (domain !== undefined) {
-  whereCondition.domain = domain;
-} else if (slug !== undefined) {
-  whereCondition.slug = slug;
-} else {
-  // Allow fallback for super_admin logins with no domain
-  whereCondition[Op.or] = [
-    { domain: domainFromHost },
-    { domain: null }
-  ];
-}
+    // Normalize domain if 'www.' is included
+    if (domainFromHost && domainFromHost.startsWith('www.')) {
+      domainFromHost = domainFromHost.slice(4);  // Strip 'www.'
+    }
 
+    console.log("Domain from Host:", domainFromHost); // Log this to check what domain is being passed
 
+    if (domain !== undefined) {
+      // Normalize the domain passed in the request
+      const normalizedDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
+      whereCondition.domain = normalizedDomain;
+    } else if (slug !== undefined) {
+      whereCondition.slug = slug;
+    } else {
+      // Allow fallback for super_admin logins with no domain
+      whereCondition[Op.or] = [
+        { domain: domainFromHost },
+        { domain: null }  // Allow super_admin to login without domain
+      ];
+    }
+
+    // Find the user based on the where condition
     const user = await User.findOne({ where: whereCondition });
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
+    // If user has no password (e.g., super_admin or custom login), allow login
     if (!user.password) {
       req.session.user = {
         id: user.id,
@@ -105,11 +116,13 @@ if (domain !== undefined) {
       return res.status(200).json({ message: 'Login successful (no password required)', user: req.session.user });
     }
 
+    // Check if password is valid
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
+    // Set the session with user details
     req.session.user = {
       id: user.id,
       username: user.username,
