@@ -82,19 +82,18 @@ export const loginUser = async (req, res) => {
 
     console.log("Domain from Host:", domainFromHost); // Log this to check what domain is being passed
 
-    if (domain !== undefined) {
-      // Normalize the domain passed in the request
-      const normalizedDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
-      whereCondition.domain = normalizedDomain;
-    } else if (slug !== undefined) {
-      whereCondition.slug = slug;
-    } else {
-      // Allow fallback for super_admin logins with no domain
-      whereCondition[Op.or] = [
-        { domain: domainFromHost },
-        { domain: null }  // Allow super_admin to login without domain
-      ];
-    }
+if (slug) {
+  whereCondition.slug = slug;
+} else if (domain) {
+  const normalizedDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
+  whereCondition.domain = normalizedDomain;
+} else {
+  whereCondition[Op.or] = [
+    { domain: domainFromHost },
+    { domain: null },
+  ];
+}
+
 
     // Find the user based on the where condition
     const user = await User.findOne({ where: whereCondition });
