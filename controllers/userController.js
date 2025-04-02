@@ -84,16 +84,15 @@ export const loginUser = async (req, res) => {
 
 if (slug) {
   whereCondition.slug = slug;
-} else if (domain) {
+} else if (domain && domain !== "sportinghip.com") {
   const normalizedDomain = domain.startsWith('www.') ? domain.slice(4) : domain;
   whereCondition.domain = normalizedDomain;
 } else {
   whereCondition[Op.or] = [
     { domain: domainFromHost },
-    { domain: null },
+    { domain: null }, // Allow fallback for super_admin
   ];
 }
-
 
     // Find the user based on the where condition
     const user = await User.findOne({ where: whereCondition });
