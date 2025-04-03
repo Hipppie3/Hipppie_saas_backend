@@ -23,6 +23,7 @@ import PlayerAttributeRoutes from './routes/playerAttributeRoutes.js';
 import seasonRoutes from './routes/seasonRoutes.js';
 import viewModeRoutes from './routes/userPreferences.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
+import businessRoutes from './routes/businessRoutes.js';
 
 const app = express();
 app.set('trust proxy', 1); // 🔥 This is required when using secure cookies behind a proxy (Netlify/Heroku)
@@ -78,6 +79,7 @@ app.use('/api/playerAttributes', PlayerAttributeRoutes)
 app.use('/api/seasons', seasonRoutes)
 app.use('/api/preferences', viewModeRoutes)
 app.use('/api/schedules', scheduleRoutes)
+app.use('/api/businesses', businessRoutes)
 
 app.get('/', (req, res) => {
   res.send("App is running!");
