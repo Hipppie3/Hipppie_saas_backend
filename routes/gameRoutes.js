@@ -1,5 +1,5 @@
 import express from 'express';
-import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule, updateGameDetails, getGamesBySchedule, generateWeeklyGames, getWeeklyGames, getWeeklyByes, generateFullSchedule } from '../controllers/gameController.js';
+import { createGame, getGames, getGameById, updateGameScores, deleteGame, getGamesByLeague, generateLeagueSchedule, updateGameDetails, getGamesBySchedule, generateWeeklyGames, getWeeklyGames, getWeeklyByes, generateFullSchedule, swapGames } from '../controllers/gameController.js';
 import { authenticateSession } from '../middleware/authMiddleware.js';
 import { updatePeriodScores } from '../controllers/gamePeriodScoreController.js';
 
@@ -11,6 +11,7 @@ router.get('/by-schedule', getGamesBySchedule);
 router.get('/weekly-games', getWeeklyGames);
 // routes/gameRoutes.js
 router.get('/weekly-byes', getWeeklyByes);
+router.put('/swap', swapGames)
 
 router.post('/generate-weekly-games', generateWeeklyGames);
 router.post('/generate-full-schedule', generateFullSchedule); //

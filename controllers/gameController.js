@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 export const createGame = async (req, res) => {
   try {
     const { leagueId, team1_id, team2_id, date, status, score_team1, score_team2,  video_url, location, time } = req.body;
-console.log(leagueId)
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No user session' });
     }
@@ -42,8 +42,6 @@ const sport = user?.sports?.[0]; // First sport linked to the user
 if (!sport) {
   return res.status(400).json({ message: "Sport not found for user" });
 }
-
-    console.log(sport)
     res.status(201).json(newGame);
   } catch (error) {
     console.error("Error creating game:", error);
@@ -54,7 +52,7 @@ if (!sport) {
 
 // ✅ Get all games
 export const getGames = async (req, res) => {
-  console.log("Fetching games");
+
 
   try {
     const { domain, slug } = req.query;
@@ -724,3 +722,34 @@ export const getWeeklyByes = async (req, res) => {
   }
 };
 
+// PUT /api/games/swap
+export const swapGames = async (req, res) => {
+  const { gameId1, gameId2 } = req.body;
+
+  try {
+    const game1 = await Game.findByPk(gameId1);
+    const game2 = await Game.findByPk(gameId2);
+
+    if (!game1 || !game2) {
+      return res.status(404).json({ message: 'One or both games not found' });
+    }
+
+    // Swap team IDs
+    const tempTeam1 = game1.team1_id;
+    const tempTeam2 = game1.team2_id;
+
+    game1.team1_id = game2.team1_id;
+    game1.team2_id = game2.team2_id;
+
+    game2.team1_id = tempTeam1;
+    game2.team2_id = tempTeam2;
+
+    await game1.save();
+    await game2.save();
+
+    res.json({ message: 'Games swapped successfully', game1, game2 });
+  } catch (error) {
+    console.error('Error swapping games:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

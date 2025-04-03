@@ -136,6 +136,8 @@ export const getTeams = async (req, res) => {
         wins, // ✅ Dynamically calculated
         losses, // ✅ Dynamically calculated
         ties, // ✅ Dynamically calculated
+        unavailableSlots: team.unavailableSlots,
+
       };
     });
     res.status(200).json({
@@ -274,6 +276,8 @@ export const getTeamById = async (req, res) => {
         losses, // ✅ Dynamically calculated
         ties, // ✅ Dynamically calculated
         games,
+        unavailableSlots: team.unavailableSlots,
+
       },
     });
   } catch (error) {
@@ -285,7 +289,7 @@ export const getTeamById = async (req, res) => {
 
 
 export const updateTeam = async (req, res) => {
-  const {name, leagueId} = req.body;
+  const {name, leagueId, unavailableSlots} = req.body;
   const {id} = req.params;
 
   try {
@@ -298,6 +302,7 @@ export const updateTeam = async (req, res) => {
     await team.update({
       name: name || team.name,
       leagueId: leagueId || team.leagueId,
+      unavailableSlots: unavailableSlots || team.unavailableSlots
     })
     res.status(201).json({ message: "Team updated successfully", team })
   } catch (error) {

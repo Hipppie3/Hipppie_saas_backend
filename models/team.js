@@ -32,6 +32,10 @@ const Team = sequelize.define('team', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+  unavailableSlots: {
+  type: DataTypes.ARRAY(DataTypes.STRING),
+  allowNull: true,
+},
 }, {
   timestamps: true,
   paranoid: true, // ✅ Enables soft delete

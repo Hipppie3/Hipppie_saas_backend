@@ -130,17 +130,15 @@ export const deleteSchedule = async (req, res) => {
 
 
 
-
+// Updated code for generating games
 export const generateGamesForSchedule = async (req, res) => {
   try {
     const scheduleId = req.params.id;
-
     const schedule = await Schedule.findByPk(scheduleId);
     if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
 
     const teams = await Team.findAll({ where: { leagueId: schedule.leagueId } });
     const teamIds = teams.map(t => t.id);
-
     const weeklyDates = schedule.weeklyDates || [];
     const timeSlots = schedule.timeSlots || [];
 
@@ -157,15 +155,32 @@ export const generateGamesForSchedule = async (req, res) => {
       const playingTeams = shuffled.slice(0, 8); // 4 matchups
       const shuffledMatchups = [...playingTeams].sort(() => Math.random() - 0.5);
 
+      // Check if the teams are available at the scheduled time slot
       for (let i = 0; i < 4; i++) {
         const team1 = shuffledMatchups[i * 2];
         const team2 = shuffledMatchups[i * 2 + 1];
+        const timeSlot = timeSlots[i];
+
+        // Fetch teams' unavailable slots
+        const team1Data = await Team.findByPk(team1);
+        const team2Data = await Team.findByPk(team2);
+const team1Unavailable = team1Data.unavailableSlots || [];  // Default to an empty array if null
+const team2Unavailable = team2Data.unavailableSlots || [];  // Default to an empty array if null
+
+
+// If either team has the time slot as unavailable, skip this game
+if (team1Unavailable.includes(timeSlot) || team2Unavailable.includes(timeSlot)) {
+  console.log(`Skipping game: ${team1Data.name} vs ${team2Data.name} at ${timeSlot} due to unavailability`);
+} else {
+  console.log(`Game scheduled: ${team1Data.name} vs ${team2Data.name} at ${timeSlot}`);
+}
+
 
         gamesToCreate.push({
           scheduleId: schedule.id,
           leagueId: schedule.leagueId,
           date: weekDate,
-          time: timeSlots[i] || '18:00',
+          time: timeSlot,
           team1_id: team1,
           team2_id: team2,
           status: 'scheduled',
