@@ -289,27 +289,29 @@ export const getTeamById = async (req, res) => {
 
 
 export const updateTeam = async (req, res) => {
-  const {name, leagueId, unavailableSlots} = req.body;
-  const {id} = req.params;
+  const { name, leagueId, unavailableSlots, phone } = req.body;
+  const { id } = req.params;
 
   try {
-    const team = await Team.findByPk(id)
+    const team = await Team.findByPk(id);
     if (!team) {
-      return res.status(404).json({ message: "Team not found" })
+      return res.status(404).json({ message: "Team not found" });
     }
-    console.log(team)
-    console.log(leagueId)
+
     await team.update({
       name: name || team.name,
       leagueId: leagueId || team.leagueId,
-      unavailableSlots: unavailableSlots || team.unavailableSlots
-    })
-    res.status(201).json({ message: "Team updated successfully", team })
+      unavailableSlots: unavailableSlots || team.unavailableSlots,
+      phone: phone || team.phone, // ✅ added this line
+    });
+
+    res.status(201).json({ message: "Team updated successfully", team });
   } catch (error) {
-    console.error("Error updating team:", error)
-    res.status(500).json({ message: "Failed to update team"})
+    console.error("Error updating team:", error);
+    res.status(500).json({ message: "Failed to update team" });
   }
 };
+
 
 
 export const deleteTeam = async (req, res) => {

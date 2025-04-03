@@ -36,6 +36,10 @@ const Team = sequelize.define('team', {
   type: DataTypes.ARRAY(DataTypes.STRING),
   allowNull: true,
 },
+phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 }, {
   timestamps: true,
   paranoid: true, // ✅ Enables soft delete

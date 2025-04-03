@@ -1,7 +1,84 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import {Game, Sport, Team, League, Player, User, Stat, PlayerGameStat, GamePeriod, GamePeriodScore, Schedule, Bye} from '../models/index.js';
-
+import twilio from 'twilio';
 import { Op } from 'sequelize';
+const accountSid = process.env.TWILIO_SID;
+const authToken = process.env.TWILIO_AUTH;
+const client = twilio(accountSid, authToken);
 
+
+// PUT /api/games/swap
+export const swapGames = async (req, res) => {
+  const { gameId1, gameId2 } = req.body;
+
+  try {
+    const game1 = await Game.findByPk(gameId1);
+    const game2 = await Game.findByPk(gameId2);
+
+    if (!game1 || !game2) {
+      return res.status(404).json({ message: 'One or both games not found' });
+    }
+
+    // Swap team IDs
+    const tempTeam1 = game1.team1_id;
+    const tempTeam2 = game1.team2_id;
+
+    game1.team1_id = game2.team1_id;
+    game1.team2_id = game2.team2_id;
+
+    game2.team1_id = tempTeam1;
+    game2.team2_id = tempTeam2;
+
+    await game1.save();
+    await game2.save();
+// After await game1.save() and game2.save()
+const allTeamIds = [
+  game1.team1_id, game1.team2_id,
+  game2.team1_id, game2.team2_id,
+].filter(Boolean);
+
+const teams = await Team.findAll({
+  where: { id: allTeamIds },
+  attributes: ['id', 'name', 'phone'], // adjust if your field is named differently
+});
+
+const msg = 'Your game has been updated. Please check the schedule on the site.';
+
+await Promise.all(
+  teams.map((team) => {
+    if (!team.phone || team.phone === 'null' || team.phone.trim() === '') {
+      console.log(`⚠️ No valid phone number for ${team.name}`);
+      return null;
+    }
+
+    console.log(`📲 Sending SMS to ${team.phone}: ${team.name}: ${msg}`);
+    return sendSms(team.phone, `${team.name}: ${msg}`);
+  })
+);
+
+    res.json({ message: 'Games swapped successfully', game1, game2 });
+  } catch (error) {
+    console.error('Error swapping games:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const sendSms = async (to, message) => {
+  if (!to) return;
+  console.log(`📲 Sending SMS to ${to}: ${message}`);
+
+  try {
+    await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_PHONE,
+      to,
+    });
+  } catch (err) {
+    console.error(`❌ Failed to send SMS to ${to}:`, err.message);
+  }
+};
 
 
 // ✅ Create a new game
@@ -718,38 +795,6 @@ export const getWeeklyByes = async (req, res) => {
     res.status(200).json({ byes });
   } catch (error) {
     console.error('Error fetching byes:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-// PUT /api/games/swap
-export const swapGames = async (req, res) => {
-  const { gameId1, gameId2 } = req.body;
-
-  try {
-    const game1 = await Game.findByPk(gameId1);
-    const game2 = await Game.findByPk(gameId2);
-
-    if (!game1 || !game2) {
-      return res.status(404).json({ message: 'One or both games not found' });
-    }
-
-    // Swap team IDs
-    const tempTeam1 = game1.team1_id;
-    const tempTeam2 = game1.team2_id;
-
-    game1.team1_id = game2.team1_id;
-    game1.team2_id = game2.team2_id;
-
-    game2.team1_id = tempTeam1;
-    game2.team2_id = tempTeam2;
-
-    await game1.save();
-    await game2.save();
-
-    res.json({ message: 'Games swapped successfully', game1, game2 });
-  } catch (error) {
-    console.error('Error swapping games:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
