@@ -72,21 +72,23 @@ if (teamId) {
 
 export const getPlayers = async (req, res) => {
   try {
-    const { domain } = req.query;
+    const { domain, slug } = req.query;
     const userId = req.session.user?.id;
     const isSuperAdmin = req.session.user?.role === "super_admin";
 
     let players = [];
 
-    if (domain) {
-      // ✅ Public view with domain
-      const user = await User.findOne({ where: { domain } });
+    if (domain || slug) {
+      // ✅ Public view with domain or slug
+      const whereClause = domain ? { domain } : { slug };
+      const user = await User.findOne({ where: whereClause });
+
       if (!user) {
-        return res.status(404).json({ message: "No players found for this domain" });
+        return res.status(404).json({ message: "No players found for this domain or slug" });
       }
 
       players = await Player.findAll({
-        where: { userId: user.id }, // ✅ Top-level filter for domain user
+        where: { userId: user.id },
         include: [
           { model: League, as: "league", required: false },
           { model: Team, as: "team", required: false },
@@ -101,7 +103,7 @@ export const getPlayers = async (req, res) => {
     } else if (userId) {
       // ✅ Logged-in admin view
       players = await Player.findAll({
-        where: { userId }, // ✅ Top-level filter for logged-in user
+        where: { userId },
         include: [
           { model: League, as: "league", required: false },
           { model: Team, as: "team", required: false },
@@ -156,21 +158,21 @@ export const getPlayers = async (req, res) => {
 export const getPlayerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { domain } = req.query;
+    const { domain, slug } = req.query;
     const sessionUserId = req.session.user?.id;
     const isSuperAdmin = req.session.user?.role === "super_admin";
 
     let userIdToMatch;
 
-    if (domain) {
-      const user = await User.findOne({ where: { domain } });
-      if (!user) return res.status(404).json({ message: "Invalid domain" });
+    if (domain || slug) {
+      const whereClause = domain ? { domain } : { slug };
+      const user = await User.findOne({ where: whereClause });
+      if (!user) return res.status(404).json({ message: "Invalid domain or slug" });
       userIdToMatch = user.id;
     } else if (sessionUserId) {
       userIdToMatch = sessionUserId;
     }
 
-    // 🔐 SuperAdmin can bypass filter
     const player = await Player.findOne({
       where: isSuperAdmin ? { id } : { id, userId: userIdToMatch },
       include: [

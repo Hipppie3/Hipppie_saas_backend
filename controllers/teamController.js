@@ -350,22 +350,32 @@ export const getTeamsTest = async (req, res) => {
 
 export const getTeamPublic = async (req, res) => {
   const { id } = req.params;
-  const domain = req.query.domain;
+  const { domain, slug } = req.query;
 
   try {
-    if (!domain) return res.status(400).json({ message: "Domain is required" });
+    let owner;
 
-    const user = await User.findOne({ where: { domain } });
-    if (!user) return res.status(404).json({ message: "No user found for this domain" });
+    if (slug) {
+      owner = await User.findOne({ where: { slug } });
+    } else if (domain) {
+      const normalizedDomain = domain.startsWith("www.") ? domain.slice(4) : domain;
+      owner = await User.findOne({ where: { domain: normalizedDomain } });
+    } else {
+      return res.status(400).json({ message: "Domain or slug is required" });
+    }
+
+    if (!owner) {
+      return res.status(404).json({ message: "No user found for this domain or slug" });
+    }
 
     const team = await Team.findOne({
-      where: { id, userId: user.id },
+      where: { id, userId: owner.id },
       attributes: ['id', 'name'],
       include: [
         {
           model: Player,
           as: 'players',
-          attributes: ['id', 'firstName'],
+          attributes: ['id', 'firstName', 'lastName'],
           include: [
             {
               model: PlayerAttributeValue,
@@ -402,7 +412,9 @@ export const getTeamPublic = async (req, res) => {
       ]
     });
 
-    if (!team) return res.status(404).json({ message: "Team not found" });
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
 
     const games = [...team.homeGames, ...team.awayGames].map((game) => ({
       id: game.id,
@@ -419,14 +431,15 @@ export const getTeamPublic = async (req, res) => {
         id: team.id,
         name: team.name,
         players: team.players,
-        games,
-      },
+        games
+      }
     });
   } catch (error) {
-    console.error("Error fetching public team:", error);
+    console.error("Error fetching team:", error);
     res.status(500).json({ message: "Failed to fetch team" });
   }
 };
+
 
 
 
