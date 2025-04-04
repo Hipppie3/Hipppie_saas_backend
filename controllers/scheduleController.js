@@ -131,50 +131,53 @@ export const deleteSchedule = async (req, res) => {
 
 
 // Updated code for generating games
-export const generateGamesForSchedule = async (req, res) => {
-  try {
-    const scheduleId = req.params.id;
-    const schedule = await Schedule.findByPk(scheduleId);
-    if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+const generateWeeklyGamesInternal = async (schedule, teamIds) => {
+  const weeklyDates = schedule.weeklyDates || [];
+  const timeSlots = schedule.timeSlots || [];
 
-    const teams = await Team.findAll({ where: { leagueId: schedule.leagueId } });
-    const teamIds = teams.map(t => t.id);
-    const weeklyDates = schedule.weeklyDates || [];
-    const timeSlots = schedule.timeSlots || [];
+  if (weeklyDates.length !== schedule.numWeeks || timeSlots.length === 0) {
+    throw new Error('Schedule must have weekly dates and time slots');
+  }
 
-    if (weeklyDates.length !== schedule.numWeeks || timeSlots.length === 0) {
-      return res.status(400).json({ message: 'Schedule must have weekly dates and time slots' });
-    }
+  const matchHistory = {}; // teamId -> Set of teamIds they've played
+  const gamesToCreate = [];
 
-    const gamesToCreate = [];
+  for (let week = 0; week < schedule.numWeeks; week++) {
+    const weekDate = new Date(weeklyDates[week]);
+    const shuffled = [...teamIds].sort(() => Math.random() - 0.5);
 
-    for (let week = 0; week < schedule.numWeeks; week++) {
-      const weekDate = new Date(weeklyDates[week]);
+    const maxGamesThisWeek = Math.floor(teamIds.length / 2);
+    const maxGamesByTimeSlots = timeSlots.length;
+    const totalGames = Math.min(maxGamesThisWeek, maxGamesByTimeSlots);
 
-      const shuffled = [...teamIds].sort(() => Math.random() - 0.5);
-      const playingTeams = shuffled.slice(0, 8); // 4 matchups
-      const shuffledMatchups = [...playingTeams].sort(() => Math.random() - 0.5);
+    const numTeamsPlaying = totalGames * 2;
+    const playingTeams = shuffled.slice(0, numTeamsPlaying);
+    const shuffledMatchups = [...playingTeams].sort(() => Math.random() - 0.5);
 
-      // Check if the teams are available at the scheduled time slot
-      for (let i = 0; i < 4; i++) {
-        const team1 = shuffledMatchups[i * 2];
-        const team2 = shuffledMatchups[i * 2 + 1];
-        const timeSlot = timeSlots[i];
+    for (let i = 0; i < totalGames; i++) {
+      const team1 = shuffledMatchups[i * 2];
+      const team2 = shuffledMatchups[i * 2 + 1];
+      const timeSlot = timeSlots[i];
 
-        // Fetch teams' unavailable slots
+      const team1Matches = matchHistory[team1] || new Set();
+      const team2Matches = matchHistory[team2] || new Set();
+      if (team1Matches.has(team2) || team2Matches.has(team1)) {
+        console.log(`Skipping rematch: ${team1} vs ${team2}`);
+        continue;
+      }
+
+      try {
         const team1Data = await Team.findByPk(team1);
         const team2Data = await Team.findByPk(team2);
-const team1Unavailable = team1Data.unavailableSlots || [];  // Default to an empty array if null
-const team2Unavailable = team2Data.unavailableSlots || [];  // Default to an empty array if null
+        const team1Unavailable = team1Data.unavailableSlots || [];
+        const team2Unavailable = team2Data.unavailableSlots || [];
 
+        if (team1Unavailable.includes(timeSlot) || team2Unavailable.includes(timeSlot)) {
+          console.log(`Skipping game: ${team1Data.name} vs ${team2Data.name} at ${timeSlot} due to unavailability`);
+          continue;
+        }
 
-// If either team has the time slot as unavailable, skip this game
-if (team1Unavailable.includes(timeSlot) || team2Unavailable.includes(timeSlot)) {
-  console.log(`Skipping game: ${team1Data.name} vs ${team2Data.name} at ${timeSlot} due to unavailability`);
-} else {
-  console.log(`Game scheduled: ${team1Data.name} vs ${team2Data.name} at ${timeSlot}`);
-}
-
+        console.log(`Game scheduled: ${team1Data.name} vs ${team2Data.name} at ${timeSlot}`);
 
         gamesToCreate.push({
           scheduleId: schedule.id,
@@ -186,8 +189,29 @@ if (team1Unavailable.includes(timeSlot) || team2Unavailable.includes(timeSlot)) 
           status: 'scheduled',
           weekIndex: week,
         });
+
+        matchHistory[team1] = team1Matches.add(team2);
+        matchHistory[team2] = team2Matches.add(team1);
+      } catch (err) {
+        console.error(`Error with matchup: ${team1} vs ${team2}`, err);
+        continue;
       }
     }
+  }
+
+  return gamesToCreate;
+};
+
+export const generateGamesForSchedule = async (req, res) => {
+  try {
+    const scheduleId = req.params.id;
+    const schedule = await Schedule.findByPk(scheduleId);
+    if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+
+    const teams = await Team.findAll({ where: { leagueId: schedule.leagueId } });
+    const teamIds = teams.map(t => t.id);
+
+    const gamesToCreate = await generateWeeklyGamesInternal(schedule, teamIds);
 
     await Game.destroy({ where: { scheduleId } });
     await Game.bulkCreate(gamesToCreate);
@@ -195,6 +219,6 @@ if (team1Unavailable.includes(timeSlot) || team2Unavailable.includes(timeSlot)) 
     res.status(201).json({ message: 'Games generated successfully', games: gamesToCreate });
   } catch (error) {
     console.error('Error generating games:', error);
-    res.status(500).json({ message: 'Failed to generate games' });
+    res.status(500).json({ message: error.message || 'Failed to generate games' });
   }
 };
