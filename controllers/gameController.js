@@ -715,7 +715,7 @@ return {
 
   } catch (error) {
     console.error('Error generating weekly games:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    throw new({ message: 'Internal server error' });
   }
 };
 
