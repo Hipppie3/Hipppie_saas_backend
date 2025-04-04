@@ -678,7 +678,7 @@ if (byeTeamsThisWeek.length === 0) {
 
     console.log(byeTeamsThisWeek)
     if (!schedule.weeklyDates || !schedule.weeklyDates[weekIndex]) {
-      return res.status(400).json({ message: 'Missing weekly date for this weekIndex' });
+      throw new Error({ message: 'Missing weekly date for this weekIndex' });
     }
 
     const gameDate = schedule.weeklyDates[weekIndex];
@@ -727,7 +727,7 @@ export const generateWeeklyGames = async (req, res) => {
     res.status(201).json({ message: 'Weekly games generated successfully' });
   } catch (error) {
     console.error('Error generating weekly games:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    throw error;
   }
 };
 
