@@ -678,7 +678,7 @@ if (byeTeamsThisWeek.length === 0) {
 
     console.log(byeTeamsThisWeek)
     if (!schedule.weeklyDates || !schedule.weeklyDates[weekIndex]) {
-      throw new Error({ message: 'Missing weekly date for this weekIndex' });
+      throw new Error('Missing weekly date for this weekIndex');
     }
 
     const gameDate = schedule.weeklyDates[weekIndex];
@@ -715,7 +715,8 @@ return {
 
   } catch (error) {
     console.error('Error generating weekly games:', error);
-    throw new({ message: 'Internal server error' });
+    throw new Error('Missing weekly date for this weekIndex'); // ✅
+
   }
 };
 
