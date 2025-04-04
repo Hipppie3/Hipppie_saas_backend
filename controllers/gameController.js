@@ -93,20 +93,31 @@ export const createGame = async (req, res) => {
       return res.status(400).json({ error: "Teams must be different" });
     }
 
-    // ✅ Step 1: Create the Game
-    const newGame = await Game.create({
-      userId: req.user.id,
-      leagueId,
-      team1_id,
-      team2_id,
-      date,
-      status,
-      score_team1: score_team1 || 0,
-      score_team2: score_team2 || 0,
-      video_url,
-      location,
-      time
-    });
+let userId = req.user?.id;
+
+if (!userId && leagueId) {
+  const league = await League.findByPk(leagueId);
+  if (league?.userId) userId = league.userId;
+}
+
+if (!userId) {
+  return res.status(401).json({ message: "Unauthorized: No user found" });
+}
+
+const newGame = await Game.create({
+  userId,
+  leagueId,
+  team1_id,
+  team2_id,
+  date,
+  status,
+  score_team1: score_team1 || 0,
+  score_team2: score_team2 || 0,
+  video_url,
+  location,
+  time,
+});
+
 
 
 // ✅ Step 2: Find Sport for the user
