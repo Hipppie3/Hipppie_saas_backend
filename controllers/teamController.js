@@ -385,7 +385,7 @@ export const getTeamPublic = async (req, res) => {
                 {
                   model: PlayerAttribute,
                   as: 'attribute',
-                  attributes: ['attribute_name']
+                  attributes: ['attribute_name', 'is_visible']
                 }
               ]
             }
