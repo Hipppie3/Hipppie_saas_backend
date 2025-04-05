@@ -1,6 +1,9 @@
 import { User, Sport, Season, League, Team, Player, Game } from '../models/index.js'
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
+import s3 from '../config/aws.js';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+
 
 // Register User
 export const registerUser = async (req, res) => {
@@ -218,8 +221,25 @@ export const updateUser = async (req, res) => {
     theme,
     sportIds
   } = req.body;
-
+console.log(req.body)
   const requestingUser = req.user;
+const logo = req.file ? req.file : null;
+let logoUrl = null;
+
+if (logo) {
+  const fileName = `${Date.now()}-${logo.originalname}`;
+  const uploadParams = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: `logos/${fileName}`,
+    Body: logo.buffer,
+    ContentType: logo.mimetype,
+  };
+  await s3.send(new PutObjectCommand(uploadParams));
+
+  logoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/logos/${fileName}`;
+}
+
+
 
   try {
     const user = await User.findByPk(id, { include: { model: Sport, as: "sports" } });
@@ -279,8 +299,14 @@ export const updateUser = async (req, res) => {
       await user.update({
         domain: normalizedDomain,
         slug: normalizedSlug,
+        
       });
     }
+    // ✅ Only super admins can update the logo
+if (isSuper && logoUrl) {
+  await user.update({ logo: logoUrl });
+}
+
 
     // ✅ Password update logic (any user)
     let hashedPassword = user.password;
@@ -469,7 +495,7 @@ export const getDomain = async (req, res) => {
     console.log('Domain found:', user);
     res.status(200).json({ 
       message: 'Domain fetched successfully',
-      user: { id: user.id, username: user.username, email: user.email, domain: user.domain, theme: user.theme }
+      user: { id: user.id, username: user.username, email: user.email, domain: user.domain, theme: user.theme, logo: user.logo, }
     });
   } catch (error) {
     console.error("Error finding user:", error);

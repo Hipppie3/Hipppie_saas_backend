@@ -39,6 +39,10 @@ const User = sequelize.define('user', {
     is: /^[a-z0-9\-]+$/i, // optional: make it URL-safe
   },
   },
+  logo: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
   theme: {
     type: DataTypes.STRING,
     allowNull: false,
